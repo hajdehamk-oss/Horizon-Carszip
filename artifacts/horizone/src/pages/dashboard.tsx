@@ -34,23 +34,25 @@ export default function Dashboard() {
       </div>
 
       <Tabs defaultValue="favorites" className="w-full">
-        <TabsList className="mb-8 p-1 bg-muted/50 rounded-lg">
-          <TabsTrigger value="favorites" className="rounded-md px-6 py-2.5">
-            <Heart className="w-4 h-4 mr-2" /> Favoriten
-            {favorites && favorites.length > 0 && (
-              <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{favorites.length}</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="inquiries" className="rounded-md px-6 py-2.5">
-            <MessageSquare className="w-4 h-4 mr-2" /> Anfragen
-            {inquiries && inquiries.length > 0 && (
-              <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{inquiries.length}</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-md px-6 py-2.5">
-            <Settings className="w-4 h-4 mr-2" /> Einstellungen
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto mb-8 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="p-1 bg-muted/50 rounded-lg w-max min-w-full">
+            <TabsTrigger value="favorites" className="rounded-md px-4 md:px-6 py-2.5 whitespace-nowrap">
+              <Heart className="w-4 h-4 mr-2" /> Favoriten
+              {favorites && favorites.length > 0 && (
+                <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{favorites.length}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="inquiries" className="rounded-md px-4 md:px-6 py-2.5 whitespace-nowrap">
+              <MessageSquare className="w-4 h-4 mr-2" /> Anfragen
+              {inquiries && inquiries.length > 0 && (
+                <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{inquiries.length}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-md px-4 md:px-6 py-2.5 whitespace-nowrap">
+              <Settings className="w-4 h-4 mr-2" /> Einstellungen
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="favorites" className="space-y-6">
           <h2 className="text-2xl font-bold mb-6">Meine Favoriten</h2>

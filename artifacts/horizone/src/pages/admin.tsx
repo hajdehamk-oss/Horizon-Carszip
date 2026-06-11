@@ -215,13 +215,15 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6 flex-wrap h-auto gap-1">
-          <TabsTrigger value="overview">Übersicht</TabsTrigger>
-          <TabsTrigger value="haendler">Händler-Panel</TabsTrigger>
-          <TabsTrigger value="vehicles">Fahrzeuge</TabsTrigger>
-          <TabsTrigger value="add-vehicle">Fahrzeug hinzufügen</TabsTrigger>
-          <TabsTrigger value="approvals">Freigaben</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto mb-6 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="h-auto gap-1 w-max">
+            <TabsTrigger value="overview" className="whitespace-nowrap">Übersicht</TabsTrigger>
+            <TabsTrigger value="haendler" className="whitespace-nowrap">Händler-Panel</TabsTrigger>
+            <TabsTrigger value="vehicles" className="whitespace-nowrap">Fahrzeuge</TabsTrigger>
+            <TabsTrigger value="add-vehicle" className="whitespace-nowrap">Fahrzeug hinzufügen</TabsTrigger>
+            <TabsTrigger value="approvals" className="whitespace-nowrap">Freigaben</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Overview ── */}
         <TabsContent value="overview">
