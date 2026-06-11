@@ -74,7 +74,10 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           <span className="truncate max-w-[120px]">{vehicle.location}</span>
         </div>
         <div className="pt-3 text-xs opacity-70">
-          Vor {Math.floor(Math.random() * 10) + 1} Tagen
+          {vehicle.createdAt ? (() => {
+            const days = Math.floor((Date.now() - new Date(vehicle.createdAt).getTime()) / 86400000);
+            return days === 0 ? "Heute" : `Vor ${days} Tag${days === 1 ? "" : "en"}`;
+          })() : "Neu"}
         </div>
       </CardFooter>
     </Card>

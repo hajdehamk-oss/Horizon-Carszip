@@ -1,9 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Settings, Heart, MessageSquare } from "lucide-react";
+import { Settings, Heart, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useListFavorites, useListInquiries } from "@workspace/api-client-react";
+import { VehicleCard } from "@/components/vehicle-card";
+
+const USER_ID = 1;
 
 export default function Dashboard() {
+  const { data: favorites, isLoading: isLoadingFavorites } = useListFavorites({ userId: USER_ID });
+  const { data: inquiries, isLoading: isLoadingInquiries } = useListInquiries({ userId: USER_ID });
+
   return (
     <div className="container py-8 space-y-8">
       <div className="flex items-center justify-between">
@@ -15,31 +24,74 @@ export default function Dashboard() {
         <TabsList className="mb-8 p-1 bg-muted/50 rounded-lg">
           <TabsTrigger value="favorites" className="rounded-md px-6 py-2.5">
             <Heart className="w-4 h-4 mr-2" /> Favoriten
+            {favorites && favorites.length > 0 && (
+              <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{favorites.length}</span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="inquiries" className="rounded-md px-6 py-2.5">
             <MessageSquare className="w-4 h-4 mr-2" /> Anfragen
+            {inquiries && inquiries.length > 0 && (
+              <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{inquiries.length}</span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-md px-6 py-2.5">
             <Settings className="w-4 h-4 mr-2" /> Einstellungen
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="favorites" className="space-y-6">
           <h2 className="text-2xl font-bold mb-6">Meine Favoriten</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {isLoadingFavorites ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-80 w-full rounded-xl" />)}
+            </div>
+          ) : favorites && favorites.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {favorites.map((vehicle: Parameters<typeof VehicleCard>[0]['vehicle']) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </div>
+          ) : (
             <div className="col-span-3 p-12 text-center border border-border/50 rounded-lg bg-card text-muted-foreground">
               Sie haben noch keine Fahrzeuge auf dem Merkzettel.
             </div>
-          </div>
+          )}
         </TabsContent>
-        
+
         <TabsContent value="inquiries">
           <h2 className="text-2xl font-bold mb-6">Meine Anfragen</h2>
-          <Card>
-            <CardContent className="p-12 text-center text-muted-foreground">
-              Sie haben noch keine Anfragen gesendet.
-            </CardContent>
-          </Card>
+          {isLoadingInquiries ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+          ) : inquiries && inquiries.length > 0 ? (
+            <div className="space-y-4">
+              {inquiries.map((inquiry: { id: number; senderName: string; senderEmail: string; message: string; status: string; createdAt: string }) => (
+                <Card key={inquiry.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1 flex-1">
+                        <p className="font-medium">{inquiry.senderName}</p>
+                        <p className="text-sm text-muted-foreground">{inquiry.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(inquiry.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                        </p>
+                      </div>
+                      <Badge variant={inquiry.status === 'new' ? 'default' : 'outline'}>
+                        {inquiry.status === 'new' ? 'Neu' : inquiry.status === 'replied' ? 'Beantwortet' : inquiry.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center text-muted-foreground">
+                Sie haben noch keine Anfragen gesendet.
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
@@ -50,7 +102,7 @@ export default function Dashboard() {
                 <CardTitle>Persönliche Daten</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                 <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-sm text-muted-foreground">Name</span>
                     <p className="font-medium">Max Mustermann</p>
@@ -70,7 +122,7 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Benachrichtigungen</CardTitle>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vehiclesTable, usersTable, dealersTable, inquiriesTable } from "@workspace/db";
+import { vehiclesTable, usersTable, dealersTable, inquiriesTable, favoritesTable } from "@workspace/db";
 import { eq, sql, gte, and } from "drizzle-orm";
 
 const router = Router();
@@ -61,11 +61,22 @@ router.get("/stats/dashboard", async (req, res) => {
         )
       );
 
+    const favCondition = dealerId
+      ? sql`${favoritesTable.vehicleId} IN (SELECT id FROM vehicles WHERE dealer_id = ${parseInt(dealerId)})`
+      : userId
+      ? eq(favoritesTable.userId, parseInt(userId))
+      : undefined;
+
+    const totalFavorites = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(favoritesTable)
+      .where(favCondition);
+
     res.json({
       activeListings: listings[0]?.count ?? 0,
       totalViews: totalViews[0]?.views ?? 0,
       totalInquiries: inquiries[0]?.count ?? 0,
-      totalFavorites: 0,
+      totalFavorites: totalFavorites[0]?.count ?? 0,
       recentInquiries: recentInquiries[0]?.count ?? 0,
     });
   } catch (err) {

@@ -18,6 +18,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">Startseite</Link>
             <Link href="/fahrzeuge" className="text-sm font-medium hover:text-primary transition-colors">Fahrzeuge</Link>
             <Link href="/haendler" className="text-sm font-medium hover:text-primary transition-colors">Händler</Link>
+            <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">Profil</Link>
+            <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">Admin</Link>
           </nav>
           <div className="flex items-center gap-4">
             <Button
@@ -28,9 +30,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Thema umschalten</span>
-            </Button>
-            <Button className="hidden md:inline-flex bg-primary text-primary-foreground hover:bg-primary/90">
-              Anmelden
             </Button>
           </div>
         </div>
