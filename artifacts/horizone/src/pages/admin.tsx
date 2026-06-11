@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useGetAdminStats, useGetPlatformStats, useListVehicles, useCreateVehicle } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Car, Euro, Store, CheckCircle, Clock, Plus, Trash2, Upload, X, LogOut } from "lucide-react";
+import { Users, Car, Euro, Store, CheckCircle, Clock, Plus, Trash2, Upload, X, LogOut, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -64,7 +63,7 @@ export default function Admin() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const [form, setForm] = useState<VehicleFormData>(emptyForm);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -147,7 +146,7 @@ export default function Admin() {
       toast({ title: "Fahrzeug erfolgreich erstellt" });
       setForm(emptyForm);
       setUploadedImages([]);
-      setDialogOpen(false);
+      setActiveTab("vehicles");
     } catch (err) {
       toast({ title: "Fehler beim Erstellen", description: String(err), variant: "destructive" });
     } finally {
@@ -217,13 +216,15 @@ export default function Admin() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="vehicles">Fahrzeuge</TabsTrigger>
+          <TabsTrigger value="add-vehicle">Fahrzeug hinzufügen</TabsTrigger>
           <TabsTrigger value="approvals">Freigaben</TabsTrigger>
         </TabsList>
 
+        {/* ── Overview ── */}
         <TabsContent value="overview">
           <Card>
             <CardHeader>
@@ -249,181 +250,17 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* ── Vehicles list ── */}
         <TabsContent value="vehicles">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Alle Fahrzeuge ({vehiclesData?.total ?? 0})</h2>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-primary hover:bg-primary/90 gap-2">
-                    <Plus className="h-4 w-4" /> Fahrzeug hinzufügen
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Neues Fahrzeug erstellen</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-6 pt-2">
-                    <div className="space-y-3">
-                      <Label className="text-base font-semibold">Fotos</Label>
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-border hover:border-primary/50 rounded-lg p-6 text-center cursor-pointer transition-colors"
-                      >
-                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          {isUploading ? "Wird hochgeladen..." : "Klicken oder Dateien hierher ziehen"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP bis zu 10 MB</p>
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={handleImageUpload}
-                        disabled={isUploading}
-                      />
-                      {uploadedImages.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {uploadedImages.map((url, i) => (
-                            <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
-                              <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => setUploadedImages(prev => prev.filter((_, j) => j !== i))}
-                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                              >
-                                <X className="h-4 w-4 text-white" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2 space-y-1.5">
-                        <Label>Titel *</Label>
-                        <Input value={form.title} onChange={e => setField("title", e.target.value)} placeholder="z.B. Porsche 911 Carrera S – Sportabgasanlage" required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Marke *</Label>
-                        <Input value={form.brand} onChange={e => setField("brand", e.target.value)} placeholder="z.B. Porsche" required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Modell *</Label>
-                        <Input value={form.model} onChange={e => setField("model", e.target.value)} placeholder="z.B. 911 Carrera S" required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Baujahr *</Label>
-                        <Input type="number" value={form.year} onChange={e => setField("year", e.target.value)} min={1900} max={2030} required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Preis (€) *</Label>
-                        <Input type="number" value={form.price} onChange={e => setField("price", e.target.value)} placeholder="z.B. 89900" required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Kilometerstand *</Label>
-                        <Input type="number" value={form.km} onChange={e => setField("km", e.target.value)} placeholder="z.B. 25000" required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Standort *</Label>
-                        <Input value={form.location} onChange={e => setField("location", e.target.value)} placeholder="z.B. München" required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Kraftstoff</Label>
-                        <Select value={form.fuelType} onValueChange={v => setField("fuelType", v)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {["Benzin", "Diesel", "Elektro", "Hybrid", "Plug-in Hybrid", "Wasserstoff"].map(f => (
-                              <SelectItem key={f} value={f}>{f}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Getriebe</Label>
-                        <Select value={form.transmission} onValueChange={v => setField("transmission", v)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {["Automatik", "Schaltgetriebe", "Halbautomatik"].map(t => (
-                              <SelectItem key={t} value={t}>{t}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Karosserie</Label>
-                        <Select value={form.vehicleType} onValueChange={v => setField("vehicleType", v)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {["Limousine", "SUV", "Kombi", "Sportwagen", "Cabrio", "Coupe", "Van", "Geländewagen"].map(t => (
-                              <SelectItem key={t} value={t}>{t}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Zustand</Label>
-                        <Select value={form.condition} onValueChange={v => setField("condition", v)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">Neu</SelectItem>
-                            <SelectItem value="used">Gebraucht</SelectItem>
-                            <SelectItem value="classic">Klassiker</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Farbe</Label>
-                        <Input value={form.color} onChange={e => setField("color", e.target.value)} placeholder="z.B. Schwarz-Metallic" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Leistung (PS)</Label>
-                        <Input type="number" value={form.power} onChange={e => setField("power", e.target.value)} placeholder="z.B. 450" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Türen</Label>
-                        <Input type="number" value={form.doors} onChange={e => setField("doors", e.target.value)} min={1} max={6} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Sitzplätze</Label>
-                        <Input type="number" value={form.seats} onChange={e => setField("seats", e.target.value)} min={1} max={9} />
-                      </div>
-                      <div className="col-span-2 space-y-1.5">
-                        <Label>Beschreibung</Label>
-                        <Textarea
-                          value={form.description}
-                          onChange={e => setField("description", e.target.value)}
-                          placeholder="Fahrzeugbeschreibung, Ausstattung, Besonderheiten..."
-                          rows={4}
-                        />
-                      </div>
-                      <div className="col-span-2 flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          id="featured"
-                          checked={form.featured}
-                          onChange={e => setField("featured", e.target.checked)}
-                          className="h-4 w-4 accent-primary"
-                        />
-                        <Label htmlFor="featured" className="cursor-pointer">Als „Top Inserat" markieren</Label>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 pt-2">
-                      <Button type="button" variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
-                        Abbrechen
-                      </Button>
-                      <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90" disabled={isSubmitting || isUploading}>
-                        {isSubmitting ? "Wird erstellt..." : "Fahrzeug erstellen"}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <Button
+                className="bg-primary hover:bg-primary/90 gap-2"
+                onClick={() => setActiveTab("add-vehicle")}
+              >
+                <Plus className="h-4 w-4" /> Fahrzeug hinzufügen
+              </Button>
             </div>
 
             <Card>
@@ -473,6 +310,226 @@ export default function Admin() {
           </div>
         </TabsContent>
 
+        {/* ── Add vehicle (inline, no dialog) ── */}
+        <TabsContent value="add-vehicle">
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => setActiveTab("vehicles")}>
+                <ArrowLeft className="h-4 w-4" /> Zurück zur Liste
+              </Button>
+              <h2 className="text-xl font-bold">Neues Fahrzeug erstellen</h2>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Photo upload */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Fotos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-border hover:border-primary/50 rounded-lg p-10 text-center cursor-pointer transition-colors"
+                  >
+                    <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm font-medium">
+                      {isUploading ? "Wird hochgeladen…" : "Klicken oder Dateien hierher ziehen"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP bis zu 10 MB</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
+                  />
+                  {uploadedImages.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {uploadedImages.map((url, i) => (
+                        <div key={i} className="relative group w-24 h-24 rounded-lg overflow-hidden border border-border">
+                          <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setUploadedImages(prev => prev.filter((_, j) => j !== i))}
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          >
+                            <X className="h-5 w-5 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Basic details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Fahrzeugdaten</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="md:col-span-2 space-y-1.5">
+                      <Label>Titel *</Label>
+                      <Input value={form.title} onChange={e => setField("title", e.target.value)} placeholder="z.B. Porsche 911 Carrera S – Sportabgasanlage" required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Marke *</Label>
+                      <Input value={form.brand} onChange={e => setField("brand", e.target.value)} placeholder="z.B. Porsche" required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Modell *</Label>
+                      <Input value={form.model} onChange={e => setField("model", e.target.value)} placeholder="z.B. 911 Carrera S" required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Baujahr *</Label>
+                      <Input type="number" value={form.year} onChange={e => setField("year", e.target.value)} min={1900} max={2030} required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Preis (€) *</Label>
+                      <Input type="number" value={form.price} onChange={e => setField("price", e.target.value)} placeholder="z.B. 89900" required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Kilometerstand *</Label>
+                      <Input type="number" value={form.km} onChange={e => setField("km", e.target.value)} placeholder="z.B. 25000" required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Standort *</Label>
+                      <Input value={form.location} onChange={e => setField("location", e.target.value)} placeholder="z.B. München" required />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Technical details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Technische Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="space-y-1.5">
+                      <Label>Kraftstoff</Label>
+                      <Select value={form.fuelType} onValueChange={v => setField("fuelType", v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["Benzin", "Diesel", "Elektro", "Hybrid", "Plug-in Hybrid", "Wasserstoff"].map(f => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Getriebe</Label>
+                      <Select value={form.transmission} onValueChange={v => setField("transmission", v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["Automatik", "Schaltgetriebe", "Halbautomatik"].map(t => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Karosserie</Label>
+                      <Select value={form.vehicleType} onValueChange={v => setField("vehicleType", v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["Limousine", "SUV", "Kombi", "Sportwagen", "Cabrio", "Coupe", "Van", "Geländewagen"].map(t => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Zustand</Label>
+                      <Select value={form.condition} onValueChange={v => setField("condition", v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">Neu</SelectItem>
+                          <SelectItem value="used">Gebraucht</SelectItem>
+                          <SelectItem value="classic">Klassiker</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Farbe</Label>
+                      <Input value={form.color} onChange={e => setField("color", e.target.value)} placeholder="z.B. Schwarz-Metallic" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Leistung (PS)</Label>
+                      <Input type="number" value={form.power} onChange={e => setField("power", e.target.value)} placeholder="z.B. 450" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Türen</Label>
+                      <Input type="number" value={form.doors} onChange={e => setField("doors", e.target.value)} min={1} max={6} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Sitzplätze</Label>
+                      <Input type="number" value={form.seats} onChange={e => setField("seats", e.target.value)} min={1} max={9} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Description + options */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Beschreibung & Optionen</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-1.5">
+                    <Label>Beschreibung</Label>
+                    <Textarea
+                      value={form.description}
+                      onChange={e => setField("description", e.target.value)}
+                      placeholder="Fahrzeugbeschreibung, Ausstattung, Besonderheiten…"
+                      rows={5}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={form.featured}
+                      onChange={e => setField("featured", e.target.checked)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <Label htmlFor="featured" className="cursor-pointer">Als „Top Inserat" markieren</Label>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Action buttons */}
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 md:flex-none md:px-10"
+                  onClick={() => {
+                    setForm(emptyForm);
+                    setUploadedImages([]);
+                    setActiveTab("vehicles");
+                  }}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 md:flex-none md:px-10 bg-primary hover:bg-primary/90"
+                  disabled={isSubmitting || isUploading}
+                >
+                  {isSubmitting ? "Wird erstellt…" : "Fahrzeug erstellen"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </TabsContent>
+
+        {/* ── Approvals ── */}
         <TabsContent value="approvals">
           <Card>
             <CardHeader>
