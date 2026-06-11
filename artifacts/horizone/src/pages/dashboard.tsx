@@ -6,18 +6,31 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListFavorites, useListInquiries } from "@workspace/api-client-react";
 import { VehicleCard } from "@/components/vehicle-card";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const USER_ID = 1;
+
+function statusLabel(status: string) {
+  if (['new', 'neu'].includes(status)) return { label: 'Neu', variant: 'default' as const };
+  if (['replied', 'beantwortet'].includes(status)) return { label: 'Beantwortet', variant: 'outline' as const };
+  return { label: status, variant: 'outline' as const };
+}
 
 export default function Dashboard() {
   const { data: favorites, isLoading: isLoadingFavorites } = useListFavorites({ userId: USER_ID });
   const { data: inquiries, isLoading: isLoadingInquiries } = useListInquiries({ userId: USER_ID });
+  const { toast } = useToast();
+  const [notifNew, setNotifNew] = useState(true);
+  const [notifPrice, setNotifPrice] = useState(true);
 
   return (
     <div className="container py-8 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Mein Profil</h1>
-        <Button variant="outline">Profil bearbeiten</Button>
+        <Button variant="outline" onClick={() => toast({ description: "Profilbearbeitung demnächst verfügbar." })}>
+          Profil bearbeiten
+        </Button>
       </div>
 
       <Tabs defaultValue="favorites" className="w-full">
@@ -52,7 +65,7 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="col-span-3 p-12 text-center border border-border/50 rounded-lg bg-card text-muted-foreground">
+            <div className="p-12 text-center border border-border/50 rounded-lg bg-card text-muted-foreground">
               Sie haben noch keine Fahrzeuge auf dem Merkzettel.
             </div>
           )}
@@ -66,24 +79,25 @@ export default function Dashboard() {
             </div>
           ) : inquiries && inquiries.length > 0 ? (
             <div className="space-y-4">
-              {inquiries.map((inquiry: { id: number; senderName: string; senderEmail: string; message: string; status: string; createdAt: string }) => (
-                <Card key={inquiry.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1 flex-1">
-                        <p className="font-medium">{inquiry.senderName}</p>
-                        <p className="text-sm text-muted-foreground">{inquiry.message}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(inquiry.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                        </p>
+              {inquiries.map((inquiry: { id: number; senderName: string; senderEmail: string; message: string; status: string; createdAt: string }) => {
+                const { label, variant } = statusLabel(inquiry.status);
+                return (
+                  <Card key={inquiry.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1 flex-1">
+                          <p className="font-medium">{inquiry.senderName}</p>
+                          <p className="text-sm text-muted-foreground">{inquiry.message}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(inquiry.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                          </p>
+                        </div>
+                        <Badge variant={variant}>{label}</Badge>
                       </div>
-                      <Badge variant={inquiry.status === 'new' ? 'default' : 'outline'}>
-                        {inquiry.status === 'new' ? 'Neu' : inquiry.status === 'replied' ? 'Beantwortet' : inquiry.status}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card>
@@ -134,18 +148,24 @@ export default function Dashboard() {
                       <p className="font-medium">E-Mail bei neuen passenden Inseraten</p>
                       <p className="text-sm text-muted-foreground">Wir informieren Sie über neue Fahrzeuge, die zu Ihren Suchen passen.</p>
                     </div>
-                    <div className="h-6 w-11 rounded-full bg-primary relative cursor-pointer">
-                      <div className="absolute right-1 top-1 h-4 w-4 rounded-full bg-white"></div>
-                    </div>
+                    <button
+                      onClick={() => setNotifNew(v => !v)}
+                      className={`h-6 w-11 rounded-full relative transition-colors ${notifNew ? "bg-primary" : "bg-muted-foreground/30"}`}
+                    >
+                      <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${notifNew ? "right-1" : "left-1"}`} />
+                    </button>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">E-Mail bei Preisänderungen</p>
                       <p className="text-sm text-muted-foreground">Erfahren Sie sofort, wenn sich der Preis eines favorisierten Fahrzeugs ändert.</p>
                     </div>
-                    <div className="h-6 w-11 rounded-full bg-primary relative cursor-pointer">
-                      <div className="absolute right-1 top-1 h-4 w-4 rounded-full bg-white"></div>
-                    </div>
+                    <button
+                      onClick={() => setNotifPrice(v => !v)}
+                      className={`h-6 w-11 rounded-full relative transition-colors ${notifPrice ? "bg-primary" : "bg-muted-foreground/30"}`}
+                    >
+                      <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${notifPrice ? "right-1" : "left-1"}`} />
+                    </button>
                   </div>
                 </div>
               </CardContent>

@@ -1,7 +1,14 @@
 import { useState, useRef } from "react";
-import { useGetAdminStats, useGetPlatformStats, useListVehicles, useCreateVehicle } from "@workspace/api-client-react";
+import {
+  useGetAdminStats, useGetPlatformStats, useListVehicles,
+  useCreateVehicle, useGetDashboardStats, useListInquiries
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Car, Euro, Store, CheckCircle, Clock, Plus, Trash2, Upload, X, LogOut, ArrowLeft } from "lucide-react";
+import {
+  Users, Car, Euro, Store, CheckCircle, Clock, Plus, Trash2,
+  Upload, X, LogOut, ArrowLeft, Eye, MessageSquare, Heart,
+  PlusCircle, MapPin, Calendar, Gauge
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "wouter";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -26,24 +34,13 @@ const chartData = [
   { name: "Jul", revenue: 11960 },
 ];
 
+const DEALER_ID = 1;
+
 interface VehicleFormData {
-  title: string;
-  brand: string;
-  model: string;
-  year: string;
-  price: string;
-  km: string;
-  fuelType: string;
-  transmission: string;
-  vehicleType: string;
-  location: string;
-  description: string;
-  color: string;
-  power: string;
-  doors: string;
-  seats: string;
-  condition: string;
-  featured: boolean;
+  title: string; brand: string; model: string; year: string;
+  price: string; km: string; fuelType: string; transmission: string;
+  vehicleType: string; location: string; description: string; color: string;
+  power: string; doors: string; seats: string; condition: string; featured: boolean;
 }
 
 const emptyForm: VehicleFormData = {
@@ -53,10 +50,19 @@ const emptyForm: VehicleFormData = {
   power: "", doors: "4", seats: "5", condition: "used", featured: false,
 };
 
+function statusLabel(status: string) {
+  if (['new', 'neu'].includes(status)) return { label: 'Neu', variant: 'default' as const };
+  if (['replied', 'beantwortet'].includes(status)) return { label: 'Beantwortet', variant: 'outline' as const };
+  return { label: status, variant: 'outline' as const };
+}
+
 export default function Admin() {
   const { data: adminStats, isLoading: isLoadingAdmin } = useGetAdminStats();
   const { data: platformStats, isLoading: isLoadingPlatform } = useGetPlatformStats();
   const { data: vehiclesData, isLoading: isLoadingVehicles } = useListVehicles({ limit: 50 });
+  const { data: dealerStats, isLoading: isLoadingDealerStats } = useGetDashboardStats({ dealerId: DEALER_ID });
+  const { data: dealerVehicles, isLoading: isLoadingDealerVehicles } = useListVehicles({ limit: 10 });
+  const { data: dealerInquiries, isLoading: isLoadingDealerInquiries } = useListInquiries({ dealerId: DEALER_ID });
   const { mutateAsync: createVehicle } = useCreateVehicle();
   const { token, logout } = useAdminAuth();
   const { toast } = useToast();
@@ -122,24 +128,15 @@ export default function Admin() {
     try {
       await createVehicle({
         data: {
-          title: form.title,
-          brand: form.brand,
-          model: form.model,
-          year: parseInt(form.year),
-          price: parseInt(form.price),
-          km: parseInt(form.km),
-          fuelType: form.fuelType,
-          transmission: form.transmission,
-          vehicleType: form.vehicleType,
-          location: form.location,
-          description: form.description || undefined,
+          title: form.title, brand: form.brand, model: form.model,
+          year: parseInt(form.year), price: parseInt(form.price), km: parseInt(form.km),
+          fuelType: form.fuelType, transmission: form.transmission, vehicleType: form.vehicleType,
+          location: form.location, description: form.description || undefined,
           color: form.color || undefined,
           power: form.power ? parseInt(form.power) : undefined,
           doors: form.doors ? parseInt(form.doors) : undefined,
           seats: form.seats ? parseInt(form.seats) : undefined,
-          condition: form.condition,
-          featured: form.featured,
-          images: uploadedImages,
+          condition: form.condition, featured: form.featured, images: uploadedImages,
         },
       });
       await queryClient.invalidateQueries();
@@ -163,6 +160,7 @@ export default function Admin() {
         </Button>
       </div>
 
+      {/* Platform stat cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -217,8 +215,9 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="haendler">Händler-Panel</TabsTrigger>
           <TabsTrigger value="vehicles">Fahrzeuge</TabsTrigger>
           <TabsTrigger value="add-vehicle">Fahrzeug hinzufügen</TabsTrigger>
           <TabsTrigger value="approvals">Freigaben</TabsTrigger>
@@ -227,9 +226,7 @@ export default function Admin() {
         {/* ── Overview ── */}
         <TabsContent value="overview">
           <Card>
-            <CardHeader>
-              <CardTitle>Umsatzübersicht</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Umsatzübersicht</CardTitle></CardHeader>
             <CardContent className="pl-2">
               <div className="h-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -250,19 +247,166 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* ── Händler Panel ── */}
+        <TabsContent value="haendler">
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Händler-Dashboard</h2>
+                <p className="text-muted-foreground mt-1">Premium Motors GmbH</p>
+              </div>
+              <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={() => setActiveTab("add-vehicle")}>
+                <PlusCircle className="h-4 w-4" /> Neues Inserat erstellen
+              </Button>
+            </div>
+
+            {/* Dealer stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Aktive Inserate</CardTitle>
+                  <Car className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDealerStats ? <Skeleton className="h-8 w-24" /> : (
+                    <div className="text-2xl font-bold">{new Intl.NumberFormat("de-DE").format(dealerStats?.activeListings || 0)}</div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">Von 50 verfügbaren Slots</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Aufrufe gesamt</CardTitle>
+                  <Eye className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDealerStats ? <Skeleton className="h-8 w-24" /> : (
+                    <div className="text-2xl font-bold">{new Intl.NumberFormat("de-DE").format(dealerStats?.totalViews || 0)}</div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">Letzte 30 Tage</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Anfragen</CardTitle>
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDealerStats ? <Skeleton className="h-8 w-24" /> : (
+                    <div className="text-2xl font-bold">{new Intl.NumberFormat("de-DE").format(dealerStats?.totalInquiries || 0)}</div>
+                  )}
+                  <p className="text-xs text-primary mt-1 font-medium">{dealerStats?.recentInquiries || 0} neu</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Auf dem Merkzettel</CardTitle>
+                  <Heart className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDealerStats ? <Skeleton className="h-8 w-24" /> : (
+                    <div className="text-2xl font-bold">{new Intl.NumberFormat("de-DE").format(dealerStats?.totalFavorites || 0)}</div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">Über alle Inserate hinweg</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-3">
+              {/* Listings */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold">Ihre neuesten Inserate</h3>
+                  <Button variant="ghost" size="sm" className="text-primary" onClick={() => setActiveTab("vehicles")}>
+                    Alle anzeigen →
+                  </Button>
+                </div>
+                <Card className="border-border/50">
+                  {isLoadingDealerVehicles ? (
+                    <div className="p-6 space-y-4">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                    </div>
+                  ) : dealerVehicles?.vehicles && dealerVehicles.vehicles.length > 0 ? (
+                    <div className="divide-y divide-border/50">
+                      {dealerVehicles.vehicles.slice(0, 5).map(vehicle => (
+                        <div key={vehicle.id} className="p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors">
+                          <div className="w-16 h-12 bg-muted rounded overflow-hidden shrink-0">
+                            {vehicle.images?.[0] ? (
+                              <img src={vehicle.images[0]} alt={vehicle.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Car className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link href={`/fahrzeuge/${vehicle.id}`}>
+                              <p className="font-medium truncate hover:text-primary cursor-pointer">{vehicle.title}</p>
+                            </Link>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{vehicle.year}</span>
+                              <span className="flex items-center gap-1"><Gauge className="w-3 h-3" />{new Intl.NumberFormat("de-DE").format(vehicle.km)} km</span>
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{vehicle.location}</span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="font-bold text-primary">
+                              {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(vehicle.price)}
+                            </div>
+                            {vehicle.featured && (
+                              <Badge className="text-xs mt-1 bg-primary/10 text-primary border-none">Top Inserat</Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center text-muted-foreground">Noch keine Inserate vorhanden.</div>
+                  )}
+                </Card>
+              </div>
+
+              {/* Inquiries */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">Aktuelle Anfragen</h3>
+                <Card className="border-border/50">
+                  {isLoadingDealerInquiries ? (
+                    <div className="p-6 space-y-4">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+                    </div>
+                  ) : dealerInquiries && dealerInquiries.length > 0 ? (
+                    <div className="divide-y divide-border/50">
+                      {dealerInquiries.slice(0, 5).map((inquiry: { id: number; senderName: string; message: string; status: string }) => {
+                        const { label, variant } = statusLabel(inquiry.status);
+                        return (
+                          <div key={inquiry.id} className="p-4 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">{inquiry.senderName}</p>
+                              <Badge variant={variant} className="text-xs">{label}</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{inquiry.message}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center text-muted-foreground">Noch keine Anfragen vorhanden.</div>
+                  )}
+                </Card>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
         {/* ── Vehicles list ── */}
         <TabsContent value="vehicles">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Alle Fahrzeuge ({vehiclesData?.total ?? 0})</h2>
-              <Button
-                className="bg-primary hover:bg-primary/90 gap-2"
-                onClick={() => setActiveTab("add-vehicle")}
-              >
+              <Button className="bg-primary hover:bg-primary/90 gap-2" onClick={() => setActiveTab("add-vehicle")}>
                 <Plus className="h-4 w-4" /> Fahrzeug hinzufügen
               </Button>
             </div>
-
             <Card>
               {isLoadingVehicles ? (
                 <div className="p-6 space-y-3">
@@ -291,8 +435,7 @@ export default function Admin() {
                           {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(vehicle.price)}
                         </span>
                         <Button
-                          size="icon"
-                          variant="ghost"
+                          size="icon" variant="ghost"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10"
                           onClick={() => handleDeleteVehicle(vehicle.id, vehicle.title)}
                         >
@@ -310,7 +453,7 @@ export default function Admin() {
           </div>
         </TabsContent>
 
-        {/* ── Add vehicle (inline, no dialog) ── */}
+        {/* ── Add vehicle (inline) ── */}
         <TabsContent value="add-vehicle">
           <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -321,11 +464,8 @@ export default function Admin() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Photo upload */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Fotos</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="text-base">Fotos</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div
                     onClick={() => fileInputRef.current?.click()}
@@ -337,25 +477,16 @@ export default function Admin() {
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP bis zu 10 MB</p>
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    disabled={isUploading}
-                  />
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
+                    onChange={handleImageUpload} disabled={isUploading} />
                   {uploadedImages.length > 0 && (
                     <div className="flex flex-wrap gap-3">
                       {uploadedImages.map((url, i) => (
                         <div key={i} className="relative group w-24 h-24 rounded-lg overflow-hidden border border-border">
                           <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
+                          <button type="button"
                             onClick={() => setUploadedImages(prev => prev.filter((_, j) => j !== i))}
-                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                          >
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <X className="h-5 w-5 text-white" />
                           </button>
                         </div>
@@ -365,54 +496,41 @@ export default function Admin() {
                 </CardContent>
               </Card>
 
-              {/* Basic details */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Fahrzeugdaten</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="text-base">Fahrzeugdaten</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2 space-y-1.5">
                       <Label>Titel *</Label>
                       <Input value={form.title} onChange={e => setField("title", e.target.value)} placeholder="z.B. Porsche 911 Carrera S – Sportabgasanlage" required />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Marke *</Label>
+                    <div className="space-y-1.5"><Label>Marke *</Label>
                       <Input value={form.brand} onChange={e => setField("brand", e.target.value)} placeholder="z.B. Porsche" required />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Modell *</Label>
+                    <div className="space-y-1.5"><Label>Modell *</Label>
                       <Input value={form.model} onChange={e => setField("model", e.target.value)} placeholder="z.B. 911 Carrera S" required />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Baujahr *</Label>
+                    <div className="space-y-1.5"><Label>Baujahr *</Label>
                       <Input type="number" value={form.year} onChange={e => setField("year", e.target.value)} min={1900} max={2030} required />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Preis (€) *</Label>
+                    <div className="space-y-1.5"><Label>Preis (€) *</Label>
                       <Input type="number" value={form.price} onChange={e => setField("price", e.target.value)} placeholder="z.B. 89900" required />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Kilometerstand *</Label>
+                    <div className="space-y-1.5"><Label>Kilometerstand *</Label>
                       <Input type="number" value={form.km} onChange={e => setField("km", e.target.value)} placeholder="z.B. 25000" required />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Standort *</Label>
+                    <div className="space-y-1.5"><Label>Standort *</Label>
                       <Input value={form.location} onChange={e => setField("location", e.target.value)} placeholder="z.B. München" required />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Technical details */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Technische Details</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="text-base">Technische Details</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <div className="space-y-1.5">
-                      <Label>Kraftstoff</Label>
+                    <div className="space-y-1.5"><Label>Kraftstoff</Label>
                       <Select value={form.fuelType} onValueChange={v => setField("fuelType", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -422,8 +540,7 @@ export default function Admin() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Getriebe</Label>
+                    <div className="space-y-1.5"><Label>Getriebe</Label>
                       <Select value={form.transmission} onValueChange={v => setField("transmission", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -433,8 +550,7 @@ export default function Admin() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Karosserie</Label>
+                    <div className="space-y-1.5"><Label>Karosserie</Label>
                       <Select value={form.vehicleType} onValueChange={v => setField("vehicleType", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -444,8 +560,7 @@ export default function Admin() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Zustand</Label>
+                    <div className="space-y-1.5"><Label>Zustand</Label>
                       <Select value={form.condition} onValueChange={v => setField("condition", v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -455,73 +570,45 @@ export default function Admin() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Farbe</Label>
+                    <div className="space-y-1.5"><Label>Farbe</Label>
                       <Input value={form.color} onChange={e => setField("color", e.target.value)} placeholder="z.B. Schwarz-Metallic" />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Leistung (PS)</Label>
+                    <div className="space-y-1.5"><Label>Leistung (PS)</Label>
                       <Input type="number" value={form.power} onChange={e => setField("power", e.target.value)} placeholder="z.B. 450" />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Türen</Label>
+                    <div className="space-y-1.5"><Label>Türen</Label>
                       <Input type="number" value={form.doors} onChange={e => setField("doors", e.target.value)} min={1} max={6} />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Sitzplätze</Label>
+                    <div className="space-y-1.5"><Label>Sitzplätze</Label>
                       <Input type="number" value={form.seats} onChange={e => setField("seats", e.target.value)} min={1} max={9} />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Description + options */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Beschreibung & Optionen</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="text-base">Beschreibung & Optionen</CardTitle></CardHeader>
                 <CardContent className="space-y-5">
                   <div className="space-y-1.5">
                     <Label>Beschreibung</Label>
-                    <Textarea
-                      value={form.description}
-                      onChange={e => setField("description", e.target.value)}
-                      placeholder="Fahrzeugbeschreibung, Ausstattung, Besonderheiten…"
-                      rows={5}
-                    />
+                    <Textarea value={form.description} onChange={e => setField("description", e.target.value)}
+                      placeholder="Fahrzeugbeschreibung, Ausstattung, Besonderheiten…" rows={5} />
                   </div>
                   <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="featured"
-                      checked={form.featured}
-                      onChange={e => setField("featured", e.target.checked)}
-                      className="h-4 w-4 accent-primary"
-                    />
+                    <input type="checkbox" id="featured" checked={form.featured}
+                      onChange={e => setField("featured", e.target.checked)} className="h-4 w-4 accent-primary" />
                     <Label htmlFor="featured" className="cursor-pointer">Als „Top Inserat" markieren</Label>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Action buttons */}
               <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 md:flex-none md:px-10"
-                  onClick={() => {
-                    setForm(emptyForm);
-                    setUploadedImages([]);
-                    setActiveTab("vehicles");
-                  }}
-                >
+                <Button type="button" variant="outline" className="flex-1 md:flex-none md:px-10"
+                  onClick={() => { setForm(emptyForm); setUploadedImages([]); setActiveTab("vehicles"); }}>
                   Abbrechen
                 </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 md:flex-none md:px-10 bg-primary hover:bg-primary/90"
-                  disabled={isSubmitting || isUploading}
-                >
+                <Button type="submit" className="flex-1 md:flex-none md:px-10 bg-primary hover:bg-primary/90"
+                  disabled={isSubmitting || isUploading}>
                   {isSubmitting ? "Wird erstellt…" : "Fahrzeug erstellen"}
                 </Button>
               </div>
@@ -532,9 +619,7 @@ export default function Admin() {
         {/* ── Approvals ── */}
         <TabsContent value="approvals">
           <Card>
-            <CardHeader>
-              <CardTitle>Ausstehende Händler-Freigaben</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Ausstehende Händler-Freigaben</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {["Rhein Auto GmbH – Düsseldorf", "Autohof Bayern GmbH – Augsburg", "StarCars AG – Frankfurt"].map((name) => (
@@ -549,10 +634,12 @@ export default function Admin() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 gap-1.5">
+                      <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 gap-1.5"
+                        onClick={() => toast({ description: `${name.split(" – ")[0]} wurde abgelehnt.` })}>
                         <Clock className="w-4 h-4" /> Ablehnen
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 gap-1.5">
+                      <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 gap-1.5"
+                        onClick={() => toast({ description: `${name.split(" – ")[0]} wurde genehmigt.` })}>
                         <CheckCircle className="w-4 h-4" /> Genehmigen
                       </Button>
                     </div>

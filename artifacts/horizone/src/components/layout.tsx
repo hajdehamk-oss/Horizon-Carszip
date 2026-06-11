@@ -17,7 +17,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">Startseite</Link>
             <Link href="/fahrzeuge" className="text-sm font-medium hover:text-primary transition-colors">Fahrzeuge</Link>
-            <Link href="/haendler" className="text-sm font-medium hover:text-primary transition-colors">Händler</Link>
             <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">Profil</Link>
             <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">Admin</Link>
           </nav>
