@@ -1,9 +1,12 @@
 import { Link } from "wouter";
-import { Car, MapPin, Gauge, Calendar, Fuel } from "lucide-react";
+import { Car, MapPin, Gauge, Calendar, Fuel, Heart } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Vehicle } from "@workspace/api-client-react";
 import sedanUrl from "@/assets/car-sedan.png";
+import { useFavorites } from "@/hooks/use-favorites";
+import { cn } from "@/lib/utils";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -11,6 +14,8 @@ interface VehicleCardProps {
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   const imageUrl = vehicle.images?.[0] || sedanUrl;
+  const { isFavorited, toggleFavorite } = useFavorites();
+  const favorited = isFavorited(vehicle.id);
 
   return (
     <Card className="overflow-hidden flex flex-col group border-border/50 hover:border-primary/50 transition-all hover:shadow-lg bg-card text-card-foreground">
@@ -35,18 +40,35 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           </div>
         </div>
       </Link>
-      
+
       <CardHeader className="p-4 pb-2">
-        <div className="flex justify-between items-start gap-4">
-          <Link href={`/fahrzeuge/${vehicle.id}`} className="hover:text-primary transition-colors line-clamp-2 cursor-pointer font-bold text-lg leading-tight">
+        <div className="flex justify-between items-start gap-2">
+          <Link href={`/fahrzeuge/${vehicle.id}`} className="hover:text-primary transition-colors line-clamp-2 cursor-pointer font-bold text-lg leading-tight flex-1">
             {vehicle.title}
           </Link>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0 -mt-1 -mr-1"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(vehicle.id);
+            }}
+          >
+            <Heart
+              className={cn(
+                "w-4 h-4 transition-colors",
+                favorited ? "fill-primary text-primary" : "text-muted-foreground"
+              )}
+            />
+          </Button>
         </div>
         <div className="text-sm text-muted-foreground mt-1 font-medium">
           {vehicle.brand} {vehicle.model}
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-4 pt-2 flex-1">
         <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -67,7 +89,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           </div>
         </div>
       </CardContent>
-      
+
       <CardFooter className="p-4 pt-0 text-sm text-muted-foreground flex items-center justify-between border-t border-border/30 mt-auto">
         <div className="flex items-center gap-1.5 pt-3">
           <MapPin className="w-4 h-4" />

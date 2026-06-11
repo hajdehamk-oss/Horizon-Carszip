@@ -140,8 +140,8 @@ export default function Haendler() {
                   <div key={inquiry.id} className="p-4 space-y-1">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium">{inquiry.senderName}</p>
-                      <Badge variant={inquiry.status === 'new' ? 'default' : 'outline'} className="text-xs">
-                        {inquiry.status === 'new' ? 'Neu' : inquiry.status === 'replied' ? 'Beantwortet' : inquiry.status}
+                      <Badge variant={['new', 'neu'].includes(inquiry.status) ? 'default' : 'outline'} className="text-xs">
+                        {['new', 'neu'].includes(inquiry.status) ? 'Neu' : ['replied', 'beantwortet'].includes(inquiry.status) ? 'Beantwortet' : inquiry.status}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{inquiry.message}</p>

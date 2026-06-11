@@ -4,15 +4,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck } from "lucide-react";
+import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
+import { useFavorites } from "@/hooks/use-favorites";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FahrzeugDetail() {
   const params = useParams();
   const vehicleId = parseInt(params.id || "0", 10);
-  
+  const { toast } = useToast();
+
   const { data: vehicle, isLoading } = useGetVehicle(vehicleId, {
     query: {
       enabled: !!vehicleId,
@@ -27,8 +31,27 @@ export default function FahrzeugDetail() {
     }
   });
 
+  const { isFavorited, toggleFavorite } = useFavorites();
   const [anzahlung, setAnzahlung] = useState(5000);
   const [laufzeit, setLaufzeit] = useState(48);
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url = window.location.href;
+    const title = vehicle?.title ?? "Fahrzeug";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        /* user cancelled — ignore */
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ description: "Link in die Zwischenablage kopiert!" });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -46,8 +69,9 @@ export default function FahrzeugDetail() {
   if (!vehicle) {
     return <div className="container py-24 text-center text-xl">Fahrzeug nicht gefunden.</div>;
   }
-  
-  const rate = Math.round((vehicle.price - anzahlung) / laufzeit * 1.05);
+
+  const favorited = isFavorited(vehicle.id);
+  const rate = Math.max(0, Math.round((vehicle.price - anzahlung) / laufzeit * 1.05));
 
   return (
     <div className="container py-8">
@@ -59,11 +83,28 @@ export default function FahrzeugDetail() {
           className="w-full h-full object-cover"
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur">
-            <Share2 className="w-4 h-4" />
+          <Button
+            size="icon"
+            variant="secondary"
+            className="rounded-full bg-background/80 backdrop-blur"
+            onClick={handleShare}
+            title="Teilen"
+          >
+            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
           </Button>
-          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur">
-            <Heart className="w-4 h-4" />
+          <Button
+            size="icon"
+            variant="secondary"
+            className="rounded-full bg-background/80 backdrop-blur"
+            onClick={() => toggleFavorite(vehicle.id)}
+            title={favorited ? "Von Merkliste entfernen" : "Zur Merkliste hinzufügen"}
+          >
+            <Heart
+              className={cn(
+                "w-4 h-4 transition-colors",
+                favorited ? "fill-primary text-primary" : ""
+              )}
+            />
           </Button>
         </div>
       </div>
@@ -182,7 +223,7 @@ export default function FahrzeugDetail() {
                   <Slider 
                     value={[anzahlung]} 
                     min={0} 
-                    max={vehicle.price * 0.8} 
+                    max={Math.floor(vehicle.price * 0.8)} 
                     step={500}
                     onValueChange={(v) => setAnzahlung(v[0])}
                   />

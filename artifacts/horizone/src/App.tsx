@@ -13,6 +13,7 @@ import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import AdminLogin from "@/pages/admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -20,10 +21,13 @@ function ProtectedAdmin() {
   const { isAuthenticated } = useAdminAuth();
   const [, navigate] = useLocation();
 
-  if (!isAuthenticated) {
-    navigate("/admin/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/admin/login");
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (!isAuthenticated) return null;
 
   return <Admin />;
 }
