@@ -13,8 +13,17 @@ import FahrzeugDetail from "@/pages/fahrzeug-detail";
 import Haendler from "@/pages/haendler";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import AdminLogin from "@/pages/admin-login";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { Redirect } from "wouter";
 
 const queryClient = new QueryClient();
+
+function AdminGuard() {
+  const { isAuthenticated } = useAdminAuth();
+  if (!isAuthenticated) return <Redirect to="/admin/login" />;
+  return <Admin />;
+}
 
 function Router() {
   return (
@@ -25,7 +34,9 @@ function Router() {
         <Route path="/fahrzeuge/:id" component={FahrzeugDetail} />
         <Route path="/haendler" component={Haendler} />
         <Route path="/dashboard" component={Dashboard} />
-        <Route path="/admin" component={Admin} />
+        <Route path="/profil" component={Dashboard} />
+        <Route path="/admin/login" component={AdminLogin} />
+        <Route path="/admin" component={AdminGuard} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
