@@ -5,7 +5,10 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env["ADMIN_PASSWORD"] ?? "admin123";
+const ADMIN_PASSWORD = process.env["ADMIN_PASSWORD"];
+if (!ADMIN_PASSWORD) {
+  throw new Error("ADMIN_PASSWORD environment variable is not set");
+}
 const ADMIN_TOKEN = Buffer.from(`horizone:${ADMIN_PASSWORD}`).toString("base64");
 
 export function verifyAdminToken(req: { headers: Record<string, string | string[] | undefined> }): boolean {

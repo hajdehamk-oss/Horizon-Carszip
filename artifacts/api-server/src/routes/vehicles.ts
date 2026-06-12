@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { vehiclesTable } from "@workspace/db";
 import { eq, and, gte, lte, ilike, desc, asc, sql } from "drizzle-orm";
+import { verifyAdminToken } from "./admin.js";
 
 const router = Router();
 
@@ -237,6 +238,9 @@ router.get("/vehicles/:id/similar", async (req, res) => {
 });
 
 router.post("/vehicles", async (req, res) => {
+  if (!verifyAdminToken(req as Parameters<typeof verifyAdminToken>[0])) {
+    return res.status(401).json({ error: "Nicht autorisiert" });
+  }
   try {
     const vehicle = await db.insert(vehiclesTable).values(req.body).returning();
     res.status(201).json(vehicle[0]);
@@ -247,6 +251,9 @@ router.post("/vehicles", async (req, res) => {
 });
 
 router.patch("/vehicles/:id", async (req, res) => {
+  if (!verifyAdminToken(req as Parameters<typeof verifyAdminToken>[0])) {
+    return res.status(401).json({ error: "Nicht autorisiert" });
+  }
   try {
     const id = parseInt(req.params.id);
     const vehicle = await db.update(vehiclesTable).set({ ...req.body, updatedAt: new Date() }).where(eq(vehiclesTable.id, id)).returning();
@@ -259,6 +266,9 @@ router.patch("/vehicles/:id", async (req, res) => {
 });
 
 router.delete("/vehicles/:id", async (req, res) => {
+  if (!verifyAdminToken(req as Parameters<typeof verifyAdminToken>[0])) {
+    return res.status(401).json({ error: "Nicht autorisiert" });
+  }
   try {
     const id = parseInt(req.params.id);
     await db.delete(vehiclesTable).where(eq(vehiclesTable.id, id));
