@@ -1,0 +1,14 @@
+{
+  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/horizone run build",
+  "outputDirectory": "artifacts/horizone/dist/public",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "BASE_PATH": "/",
+    "PORT": "3000",
+    "NODE_ENV": "production"
+  }
+}
