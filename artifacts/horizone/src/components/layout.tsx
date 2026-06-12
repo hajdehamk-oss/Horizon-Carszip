@@ -24,7 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0" onClick={() => setMenuOpen(false)}>
             <Car className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold tracking-tight uppercase">HORIZONE</span>
+            <span className="text-xl font-bold tracking-tight uppercase">HORIZON</span>
           </Link>
 
           {/* Desktop nav */}
@@ -98,10 +98,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <Car className="h-5 w-5 text-primary" />
-            <span className="text-lg font-bold tracking-tight uppercase">HORIZONE</span>
+            <span className="text-lg font-bold tracking-tight uppercase">HORIZON</span>
           </div>
           <p className="text-sm text-muted-foreground text-center">
-            © {new Date().getFullYear()} HORIZONE. Deutschlands Premium-Marktplatz.
+            © {new Date().getFullYear()} HORIZON. Deutschlands Premium-Marktplatz.
           </p>
         </div>
       </footer>

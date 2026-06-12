@@ -25,7 +25,7 @@ export default function AdminLogin() {
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <Car className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold tracking-tight uppercase">HORIZONE</span>
+            <span className="text-2xl font-bold tracking-tight uppercase">HORIZON</span>
           </div>
           <p className="text-sm text-muted-foreground">Admin-Bereich</p>
         </div>
