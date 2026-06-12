@@ -1,6 +1,5 @@
 {
   "framework": null,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
-  ]
+  "outputDirectory": "public",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
 }
