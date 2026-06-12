@@ -1,7 +1,7 @@
 {
   "framework": null,
-  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/horizone run build",
-  "outputDirectory": "artifacts/horizone/dist/public",
+  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/horizone run build && mkdir -p dist && cp -r artifacts/horizone/dist/public/. dist/",
+  "outputDirectory": "dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
