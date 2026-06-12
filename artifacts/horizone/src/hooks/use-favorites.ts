@@ -1,28 +1,41 @@
-import { useListFavorites, useAddFavorite } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { getListFavoritesQueryKey } from "@workspace/api-client-react";
+import { useState, useEffect } from "react";
 
-const USER_ID = 1;
+const STORAGE_KEY = "horizone_favorites";
+
+function loadFavorites(): number[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as number[];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavorites(ids: number[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+}
 
 export function useFavorites() {
-  const queryClient = useQueryClient();
-  const { data: favorites = [] } = useListFavorites({ userId: USER_ID });
-  const { mutateAsync: addFav } = useAddFavorite();
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    setFavoriteIds(loadFavorites());
+  }, []);
 
   function isFavorited(vehicleId: number): boolean {
-    return favorites.some((v) => v.id === vehicleId);
+    return favoriteIds.includes(vehicleId);
   }
 
-  async function toggleFavorite(vehicleId: number): Promise<void> {
-    if (isFavorited(vehicleId)) {
-      await fetch(`/api/favorites/by-vehicle?userId=${USER_ID}&vehicleId=${vehicleId}`, {
-        method: "DELETE",
-      });
-    } else {
-      await addFav({ data: { userId: USER_ID, vehicleId } });
-    }
-    await queryClient.invalidateQueries({ queryKey: getListFavoritesQueryKey({ userId: USER_ID }) });
+  function toggleFavorite(vehicleId: number): void {
+    setFavoriteIds(prev => {
+      const next = prev.includes(vehicleId)
+        ? prev.filter(id => id !== vehicleId)
+        : [...prev, vehicleId];
+      saveFavorites(next);
+      return next;
+    });
   }
 
-  return { favorites, isFavorited, toggleFavorite };
+  return { favoriteIds, isFavorited, toggleFavorite };
 }

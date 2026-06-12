@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,19 @@ interface ContactDialogProps {
 }
 
 export function ContactDialog({ open, onClose, vehicleTitle, vehicleLocation }: ContactDialogProps) {
-  const { profile, updateProfile } = useVisitorProfile();
+  const { profile, loaded, updateProfile } = useVisitorProfile();
   const { toast } = useToast();
-  const [name, setName] = useState(profile?.name || "");
-  const [email, setEmail] = useState(profile?.email || "");
-  const [phone, setPhone] = useState(profile?.phone || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (loaded && open) {
+      setName(profile?.name || "");
+      setEmail(profile?.email || "");
+      setPhone(profile?.phone || "");
+    }
+  }, [loaded, open, profile]);
   const [message, setMessage] = useState(
     `Guten Tag,\n\nIch interessiere mich für Ihr Inserat "${vehicleTitle}". Bitte kontaktieren Sie mich für weitere Informationen.`
   );
