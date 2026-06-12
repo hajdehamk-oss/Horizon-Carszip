@@ -31,7 +31,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const uploadDir = path.join(process.cwd(), "uploads");
+const uploadDir = "/tmp/uploads";
 app.use("/api/uploads", express.static(uploadDir));
 
 app.use("/api", router);
