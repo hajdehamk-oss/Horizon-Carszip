@@ -209,8 +209,8 @@ router.get("/vehicles/:id/similar", async (req, res) => {
         and(
           eq(vehiclesTable.brand, vehicle[0].brand),
           sql`${vehiclesTable.id} != ${id}`,
-          lte(vehiclesTable.price, vehicle[0].price * 1.3),
-          gte(vehiclesTable.price, vehicle[0].price * 0.7)
+          lte(vehiclesTable.price, Math.ceil(vehicle[0].price * 1.3)),
+          gte(vehiclesTable.price, Math.floor(vehicle[0].price * 0.7))
         )
       )
       .limit(4);

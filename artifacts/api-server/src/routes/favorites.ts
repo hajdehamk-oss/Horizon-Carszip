@@ -44,6 +44,21 @@ router.post("/favorites", async (req, res) => {
   }
 });
 
+router.delete("/favorites/by-vehicle", async (req, res) => {
+  try {
+    const userId = parseInt(req.query.userId as string);
+    const vehicleId = parseInt(req.query.vehicleId as string);
+    if (!userId || !vehicleId) return res.status(400).json({ error: "userId und vehicleId erforderlich" });
+    await db.delete(favoritesTable).where(
+      and(eq(favoritesTable.userId, userId), eq(favoritesTable.vehicleId, vehicleId))
+    );
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err }, "removeFavoriteByVehicle error");
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
 router.delete("/favorites/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);

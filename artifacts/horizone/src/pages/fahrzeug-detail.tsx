@@ -4,31 +4,47 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck } from "lucide-react";
+import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
+import { ContactDialog } from "@/components/contact-dialog";
 import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
+import { useFavorites } from "@/hooks/use-favorites";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FahrzeugDetail() {
   const params = useParams();
   const vehicleId = parseInt(params.id || "0", 10);
-  
+  const { toast } = useToast();
+
   const { data: vehicle, isLoading } = useGetVehicle(vehicleId, {
-    query: {
-      enabled: !!vehicleId,
-      queryKey: getGetVehicleQueryKey(vehicleId)
-    }
+    query: { enabled: !!vehicleId, queryKey: getGetVehicleQueryKey(vehicleId) }
   });
-  
   const { data: similarVehicles } = useGetSimilarVehicles(vehicleId, {
-    query: {
-      enabled: !!vehicleId,
-      queryKey: getGetSimilarVehiclesQueryKey(vehicleId)
-    }
+    query: { enabled: !!vehicleId, queryKey: getGetSimilarVehiclesQueryKey(vehicleId) }
   });
 
+  const { isFavorited, toggleFavorite } = useFavorites();
   const [anzahlung, setAnzahlung] = useState(5000);
   const [laufzeit, setLaufzeit] = useState(48);
+  const [copied, setCopied] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [phoneVisible, setPhoneVisible] = useState(false);
+  const [phoneContactOpen, setPhoneContactOpen] = useState(false);
+
+  async function handleShare() {
+    const url = window.location.href;
+    const title = vehicle?.title ?? "Fahrzeug";
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ description: "Link in die Zwischenablage kopiert!" });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -46,24 +62,42 @@ export default function FahrzeugDetail() {
   if (!vehicle) {
     return <div className="container py-24 text-center text-xl">Fahrzeug nicht gefunden.</div>;
   }
-  
-  const rate = Math.round((vehicle.price - anzahlung) / laufzeit * 1.05);
+
+  const favorited = isFavorited(vehicle.id);
+  const rate = Math.max(0, Math.round((vehicle.price - anzahlung) / laufzeit * 1.05));
 
   return (
     <div className="container py-8">
+      {/* Contact dialogs */}
+      <ContactDialog
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        vehicleTitle={vehicle.title}
+        vehicleLocation={vehicle.location}
+      />
+      <ContactDialog
+        open={phoneContactOpen}
+        onClose={() => setPhoneContactOpen(false)}
+        vehicleTitle={vehicle.title}
+        vehicleLocation={vehicle.location}
+      />
+
       {/* Image Gallery */}
       <div className="w-full h-[40vh] md:h-[60vh] bg-muted rounded-xl overflow-hidden mb-8 relative">
-        <img 
-          src={vehicle.images?.[0] || "/car-placeholder.png"} 
+        <img
+          src={vehicle.images?.[0] || "/car-placeholder.png"}
           alt={vehicle.title}
           className="w-full h-full object-cover"
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur">
-            <Share2 className="w-4 h-4" />
+          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
+            onClick={handleShare} title="Teilen">
+            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
           </Button>
-          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur">
-            <Heart className="w-4 h-4" />
+          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
+            onClick={() => toggleFavorite(vehicle.id)}
+            title={favorited ? "Von Merkliste entfernen" : "Zur Merkliste hinzufügen"}>
+            <Heart className={cn("w-4 h-4 transition-colors", favorited ? "fill-primary text-primary" : "")} />
           </Button>
         </div>
       </div>
@@ -79,17 +113,17 @@ export default function FahrzeugDetail() {
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-primary">
-                  {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(vehicle.price)}
+                  {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(vehicle.price)}
                 </div>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-4 mt-6">
               <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
                 <Calendar className="w-4 h-4" /> {vehicle.year}
               </Badge>
               <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
-                <Gauge className="w-4 h-4" /> {new Intl.NumberFormat("de-DE").format(vehicle.km)} km
+                <Gauge className="w-4 h-4" /> {new Intl.NumberFormat("de-CH").format(vehicle.km)} km
               </Badge>
               <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
                 <Fuel className="w-4 h-4" /> {vehicle.fuelType}
@@ -109,7 +143,7 @@ export default function FahrzeugDetail() {
               {vehicle.description || "Keine Beschreibung verfügbar."}
             </p>
           </div>
-          
+
           <div className="space-y-4">
             <h2 className="text-2xl font-bold border-b border-border/50 pb-2">Technische Daten</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -135,7 +169,9 @@ export default function FahrzeugDetail() {
               </div>
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Zustand</div>
-                <div className="font-medium">{vehicle.condition === 'used' ? 'Gebraucht' : vehicle.condition === 'new' ? 'Neu' : 'Klassiker'}</div>
+                <div className="font-medium">
+                  {vehicle.condition === 'used' ? 'Gebraucht' : vehicle.condition === 'new' ? 'Neu' : 'Klassiker'}
+                </div>
               </div>
             </div>
           </div>
@@ -149,16 +185,34 @@ export default function FahrzeugDetail() {
                 <ShieldCheck className="w-5 h-5 text-primary" />
                 Händler kontaktieren
               </h3>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Geprüfter Händler aus {vehicle.location}.
-                </p>
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12">
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Geprüfter Händler aus {vehicle.location}.</p>
+                <Button
+                  className="w-full font-bold h-12 bg-primary hover:bg-primary/90 text-white"
+                  onClick={() => setContactOpen(true)}
+                >
                   Nachricht senden
                 </Button>
-                <Button variant="outline" className="w-full h-12">
-                  Telefonnummer anzeigen
+                <Button
+                  variant="outline"
+                  className="w-full h-12 gap-2"
+                  onClick={() => {
+                    if (phoneVisible) {
+                      setPhoneVisible(false);
+                    } else {
+                      setPhoneContactOpen(true);
+                      setPhoneVisible(true);
+                    }
+                  }}
+                >
+                  <Phone className="w-4 h-4" />
+                  {phoneVisible ? "+41 44 456 789 00" : "Telefonnummer anzeigen"}
                 </Button>
+                {phoneVisible && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Bitte nennen Sie beim Anruf Ihren Namen und das Inserat.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -170,42 +224,36 @@ export default function FahrzeugDetail() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Kaufpreis</span>
-                    <span className="font-bold">{new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(vehicle.price)}</span>
+                    <span className="font-bold">
+                      {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(vehicle.price)}
+                    </span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Anzahlung</span>
-                    <span className="font-bold">{new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(anzahlung)}</span>
+                    <span className="font-bold">
+                      {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(anzahlung)}
+                    </span>
                   </div>
-                  <Slider 
-                    value={[anzahlung]} 
-                    min={0} 
-                    max={vehicle.price * 0.8} 
-                    step={500}
-                    onValueChange={(v) => setAnzahlung(v[0])}
-                  />
+                  <Slider value={[anzahlung]} min={0} max={Math.floor(vehicle.price * 0.8)} step={500}
+                    onValueChange={(v) => setAnzahlung(v[0])} />
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Laufzeit (Monate)</span>
                     <span className="font-bold">{laufzeit}</span>
                   </div>
-                  <Slider 
-                    value={[laufzeit]} 
-                    min={12} 
-                    max={84} 
-                    step={12}
-                    onValueChange={(v) => setLaufzeit(v[0])}
-                  />
+                  <Slider value={[laufzeit]} min={12} max={84} step={12}
+                    onValueChange={(v) => setLaufzeit(v[0])} />
                 </div>
-                
+
                 <div className="pt-4 border-t border-border flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Monatliche Rate ab*</span>
                   <span className="text-2xl font-bold text-primary">
-                    {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(rate)}
+                    {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(rate)}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground text-center">
@@ -216,7 +264,7 @@ export default function FahrzeugDetail() {
           </Card>
         </div>
       </div>
-      
+
       {/* Similar Vehicles */}
       {similarVehicles && similarVehicles.length > 0 && (
         <div className="mt-16">

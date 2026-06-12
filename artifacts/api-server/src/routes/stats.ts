@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vehiclesTable, usersTable, dealersTable, inquiriesTable } from "@workspace/db";
-import { eq, sql, gte, and } from "drizzle-orm";
+import { vehiclesTable, usersTable, dealersTable, inquiriesTable, favoritesTable } from "@workspace/db";
+import { eq, sql, gte, and, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -61,11 +61,33 @@ router.get("/stats/dashboard", async (req, res) => {
         )
       );
 
+    let totalFavoritesCount = 0;
+    if (dealerId) {
+      const dealerVehicles = await db
+        .select({ id: vehiclesTable.id })
+        .from(vehiclesTable)
+        .where(eq(vehiclesTable.dealerId, parseInt(dealerId)));
+      const vehicleIds = dealerVehicles.map(v => v.id);
+      if (vehicleIds.length > 0) {
+        const favs = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(favoritesTable)
+          .where(inArray(favoritesTable.vehicleId, vehicleIds));
+        totalFavoritesCount = favs[0]?.count ?? 0;
+      }
+    } else if (userId) {
+      const favs = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(favoritesTable)
+        .where(eq(favoritesTable.userId, parseInt(userId)));
+      totalFavoritesCount = favs[0]?.count ?? 0;
+    }
+
     res.json({
       activeListings: listings[0]?.count ?? 0,
       totalViews: totalViews[0]?.views ?? 0,
       totalInquiries: inquiries[0]?.count ?? 0,
-      totalFavorites: 0,
+      totalFavorites: totalFavoritesCount,
       recentInquiries: recentInquiries[0]?.count ?? 0,
     });
   } catch (err) {
@@ -87,12 +109,14 @@ router.get("/stats/admin", async (req, res) => {
       db.select({ count: sql<number>`count(*)::int` }).from(vehiclesTable),
     ]);
 
+    const dealerCount = dealers[0]?.count ?? 0;
+
     res.json({
-      totalRevenue: dealers[0]?.count * 299 ?? 0,
+      totalRevenue: dealerCount * 299,
       newUsersThisMonth: newUsers[0]?.count ?? 0,
       newVehiclesThisMonth: newVehicles[0]?.count ?? 0,
       pendingApprovals: 3,
-      totalDealerSubscriptions: dealers[0]?.count ?? 0,
+      totalDealerSubscriptions: dealerCount,
       activeVehicles: vehicles[0]?.count ?? 0,
     });
   } catch (err) {
