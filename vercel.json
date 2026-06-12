@@ -1,4 +1,5 @@
 {
+  "framework": null,
   "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/horizone run build",
   "outputDirectory": "artifacts/horizone/dist/public",
   "installCommand": "pnpm install --frozen-lockfile",
