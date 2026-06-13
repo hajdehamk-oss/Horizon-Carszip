@@ -53,6 +53,12 @@ function Router() {
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 function AppContent() {
   const { loaded, hasName, updateProfile } = useVisitorProfile();
   const [location] = useLocation();
@@ -61,6 +67,7 @@ function AppContent() {
 
   return (
     <>
+      <ScrollToTop />
       {loaded && !hasName && !isProfilePage && (
         <VisitorNameDialog
           open={true}
