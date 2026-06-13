@@ -186,12 +186,8 @@ export default function Admin() {
             <Euro className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {isLoadingAdmin ? <Skeleton className="h-8 w-24" /> : (
-              <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(adminStats?.totalRevenue || 0)}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">{adminStats?.totalDealerSubscriptions || 0} aktive Abos à CHF 299</p>
+            <div className="text-2xl font-bold">CHF 0</div>
+            <p className="text-xs text-muted-foreground mt-1">0 aktive Abos à CHF 299</p>
           </CardContent>
         </Card>
         <Card>
