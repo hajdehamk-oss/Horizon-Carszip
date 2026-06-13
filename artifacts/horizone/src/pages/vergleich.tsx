@@ -135,105 +135,81 @@ export default function Vergleich() {
 
       {/* Car headers + table — horizontally scrollable on mobile */}
       <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="min-w-[520px]">
+        <div className="min-w-[520px] space-y-4">
 
-      <div className="grid grid-cols-[1fr_1fr_1fr] gap-0 rounded-xl overflow-hidden border border-border/50">
-        <div className="bg-muted/30 p-4" />
-        {[a, b].map((v, i) => (
-          <div key={i} className="bg-card border-l border-border/50 flex flex-col">
-            <Link href={`/fahrzeuge/${v.id}`}>
-              <div className="relative aspect-[16/9] overflow-hidden bg-muted cursor-pointer">
-                <img
-                  src={v.images?.[0] || sedanUrl}
-                  alt={v.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
+          {/* Car header cards */}
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-0 rounded-xl overflow-hidden border border-border/50">
+            <div className="bg-muted/30 p-4" />
+            {[a, b].map((v, i) => (
+              <div key={i} className="bg-card border-l border-border/50 flex flex-col">
+                <Link href={`/fahrzeuge/${v.id}`}>
+                  <div className="relative aspect-[16/9] overflow-hidden bg-muted cursor-pointer">
+                    <img
+                      src={v.images?.[0] || sedanUrl}
+                      alt={v.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                </Link>
+                <div className="p-4 flex-1">
+                  <Link href={`/fahrzeuge/${v.id}`}>
+                    <h2 className="font-bold text-base leading-snug hover:text-primary transition-colors cursor-pointer line-clamp-2">
+                      {v.title}
+                    </h2>
+                  </Link>
+                  <p className="text-sm text-muted-foreground mt-0.5">{v.brand} {v.model}</p>
+                  <p className="text-xl font-bold text-primary mt-2">
+                    {fmt(v.price, { style: "currency", currency: "CHF", maximumFractionDigits: 0 })}
+                  </p>
+                </div>
               </div>
-            </Link>
-            <div className="p-4 flex-1">
-              <Link href={`/fahrzeuge/${v.id}`}>
-                <h2 className="font-bold text-base leading-snug hover:text-primary transition-colors cursor-pointer line-clamp-2">
-                  {v.title}
-                </h2>
-              </Link>
-              <p className="text-sm text-muted-foreground mt-0.5">{v.brand} {v.model}</p>
-              <p className="text-xl font-bold text-primary mt-2">
-                {fmt(v.price, { style: "currency", currency: "CHF", maximumFractionDigits: 0 })}
-              </p>
-            </div>
+            ))}
           </div>
-        ))}
+
+          {/* Comparison table */}
+          <div className="rounded-xl border border-border/50 overflow-hidden">
+            <table className="w-full">
+              <colgroup>
+                <col className="w-[30%]" />
+                <col className="w-[35%]" />
+                <col className="w-[35%]" />
+              </colgroup>
+              <thead>
+                <tr className="bg-muted/40 border-b border-border/50">
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-muted-foreground">Merkmal</th>
+                  <th className="py-3 px-4 text-center text-sm font-bold">{a.brand} {a.model}</th>
+                  <th className="py-3 px-4 text-center text-sm font-bold border-l border-border/40">{b.brand} {b.model}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="bg-muted/10 border-b border-border/40">
+                  <td colSpan={3} className="py-2 px-4 text-xs font-bold uppercase tracking-wider text-primary/70">Preis & Allgemein</td>
+                </tr>
+                <Row label="Preis" a={fmt(a.price, { style: "currency", currency: "CHF", maximumFractionDigits: 0 })} b={fmt(b.price, { style: "currency", currency: "CHF", maximumFractionDigits: 0 })} winner={priceWinner} />
+                <Row label="Baujahr" a={String(a.year)} b={String(b.year)} winner={yearWinner} />
+                <Row label="Kilometerstand" a={`${fmt(a.km)} km`} b={`${fmt(b.km)} km`} winner={kmWinner} />
+                <Row label="Zustand" a={a.condition} b={b.condition} />
+                <Row label="Standort" a={a.location} b={b.location} />
+                <tr className="bg-muted/10 border-b border-border/40">
+                  <td colSpan={3} className="py-2 px-4 text-xs font-bold uppercase tracking-wider text-primary/70">Motor & Antrieb</td>
+                </tr>
+                <Row label="Kraftstoff" a={a.fuelType} b={b.fuelType} />
+                <Row label="Getriebe" a={a.transmission} b={b.transmission} />
+                <Row label="Leistung" a={a.power ? `${a.power} PS` : null} b={b.power ? `${b.power} PS` : null} winner={powerWinner} />
+                <Row label="Hubraum" a={a.engineSize ?? null} b={b.engineSize ?? null} />
+                <tr className="bg-muted/10 border-b border-border/40">
+                  <td colSpan={3} className="py-2 px-4 text-xs font-bold uppercase tracking-wider text-primary/70">Karosserie & Ausstattung</td>
+                </tr>
+                <Row label="Fahrzeugtyp" a={a.vehicleType} b={b.vehicleType} />
+                <Row label="Farbe" a={a.color ?? null} b={b.color ?? null} />
+                <Row label="Türen" a={a.doors ? String(a.doors) : null} b={b.doors ? String(b.doors) : null} />
+                <Row label="Sitze" a={a.seats ? String(a.seats) : null} b={b.seats ? String(b.seats) : null} />
+              </tbody>
+            </table>
+          </div>
+
+        </div>
       </div>
-
-      {/* Comparison table */}
-      <div className="rounded-xl border border-border/50 overflow-hidden mt-4">
-        <table className="w-full">
-          <colgroup>
-            <col className="w-[30%]" />
-            <col className="w-[35%]" />
-            <col className="w-[35%]" />
-          </colgroup>
-          <thead>
-            <tr className="bg-muted/40 border-b border-border/50">
-              <th className="py-3 px-4 text-left text-sm font-semibold text-muted-foreground">Merkmal</th>
-              <th className="py-3 px-4 text-center text-sm font-bold">{a.brand} {a.model}</th>
-              <th className="py-3 px-4 text-center text-sm font-bold border-l border-border/40">{b.brand} {b.model}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Preis */}
-            <tr className="bg-muted/10 border-b border-border/40">
-              <td colSpan={3} className="py-2 px-4 text-xs font-bold uppercase tracking-wider text-primary/70">
-                Preis & Allgemein
-              </td>
-            </tr>
-            <Row
-              label="Preis"
-              a={fmt(a.price, { style: "currency", currency: "CHF", maximumFractionDigits: 0 })}
-              b={fmt(b.price, { style: "currency", currency: "CHF", maximumFractionDigits: 0 })}
-              winner={priceWinner}
-            />
-            <Row label="Baujahr" a={String(a.year)} b={String(b.year)} winner={yearWinner} />
-            <Row label="Kilometerstand"
-              a={`${fmt(a.km)} km`}
-              b={`${fmt(b.km)} km`}
-              winner={kmWinner}
-            />
-            <Row label="Zustand" a={a.condition} b={b.condition} />
-            <Row label="Standort" a={a.location} b={b.location} />
-
-            {/* Motor */}
-            <tr className="bg-muted/10 border-b border-border/40">
-              <td colSpan={3} className="py-2 px-4 text-xs font-bold uppercase tracking-wider text-primary/70">
-                Motor & Antrieb
-              </td>
-            </tr>
-            <Row label="Kraftstoff" a={a.fuelType} b={b.fuelType} />
-            <Row label="Getriebe" a={a.transmission} b={b.transmission} />
-            <Row
-              label="Leistung"
-              a={a.power ? `${a.power} PS` : null}
-              b={b.power ? `${b.power} PS` : null}
-              winner={powerWinner}
-            />
-            <Row label="Hubraum" a={a.engineSize ?? null} b={b.engineSize ?? null} />
-
-            {/* Karosserie */}
-            <tr className="bg-muted/10 border-b border-border/40">
-              <td colSpan={3} className="py-2 px-4 text-xs font-bold uppercase tracking-wider text-primary/70">
-                Karosserie & Ausstattung
-              </td>
-            </tr>
-            <Row label="Fahrzeugtyp" a={a.vehicleType} b={b.vehicleType} />
-            <Row label="Farbe" a={a.color ?? null} b={b.color ?? null} />
-            <Row label="Türen" a={a.doors ? String(a.doors) : null} b={b.doors ? String(b.doors) : null} />
-            <Row label="Sitze" a={a.seats ? String(a.seats) : null} b={b.seats ? String(b.seats) : null} />
-          </tbody>
-        </table>
-      </div>
-
-        </div>{/* min-w */}
-      </div>{/* overflow-x-auto */}
 
       {/* Verdict */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -83,6 +83,29 @@ export default function Admin() {
     setForm(prev => ({ ...prev, [key]: value }));
   }
 
+  async function compressImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden"));
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Bild konnte nicht geladen werden"));
+        img.onload = () => {
+          const MAX = 1200;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target!.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
@@ -90,21 +113,13 @@ export default function Admin() {
     try {
       const urls: string[] = [];
       for (const file of files) {
-        const fd = new FormData();
-        fd.append("image", file);
-        const res = await fetch("/api/upload/vehicle-image", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        });
-        if (!res.ok) throw new Error("Upload fehlgeschlagen");
-        const body = await res.json() as { url: string };
-        urls.push(body.url);
+        const dataUrl = await compressImage(file);
+        urls.push(dataUrl);
       }
       setUploadedImages(prev => [...prev, ...urls]);
-      toast({ title: `${urls.length} Bild${urls.length > 1 ? "er" : ""} hochgeladen` });
+      toast({ title: `${urls.length} Bild${urls.length > 1 ? "er" : ""} hinzugefügt` });
     } catch (err) {
-      toast({ title: "Upload fehlgeschlagen", description: String(err), variant: "destructive" });
+      toast({ title: "Fehler beim Laden des Bildes", description: String(err), variant: "destructive" });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
