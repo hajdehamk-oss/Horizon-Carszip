@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "wouter";
 import { useListVehicles } from "@workspace/api-client-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { Input } from "@/components/ui/input";
@@ -31,11 +32,37 @@ const emptyFilters: Filters = {
 };
 
 export default function Fahrzeuge() {
+  const searchString = useSearch();
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const p = new URLSearchParams(searchString);
+    return p.get("q") || "";
+  });
   const [sortBy, setSortBy] = useState("neueste");
-  const [pending, setPending] = useState<Filters>(emptyFilters);
-  const [applied, setApplied] = useState<Filters>(emptyFilters);
+  const [pending, setPending] = useState<Filters>(() => {
+    const p = new URLSearchParams(searchString);
+    return {
+      brand: p.get("brand") || "",
+      minPrice: p.get("minPrice") || "",
+      maxPrice: p.get("maxPrice") || "",
+      minYear: p.get("minYear") || "",
+      maxYear: p.get("maxYear") || "",
+      maxKm: p.get("maxKm") || "",
+      fuelType: p.get("fuelType") || "",
+    };
+  });
+  const [applied, setApplied] = useState<Filters>(() => {
+    const p = new URLSearchParams(searchString);
+    return {
+      brand: p.get("brand") || "",
+      minPrice: p.get("minPrice") || "",
+      maxPrice: p.get("maxPrice") || "",
+      minYear: p.get("minYear") || "",
+      maxYear: p.get("maxYear") || "",
+      maxKm: p.get("maxKm") || "",
+      fuelType: p.get("fuelType") || "",
+    };
+  });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const sortParam = sortBy === "preis_asc" ? { sortBy: "price", sortOrder: "asc" }

@@ -14,6 +14,7 @@ import Haendler from "@/pages/haendler";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import AdminLogin from "@/pages/admin-login";
+import HaendlerDetail from "@/pages/haendler-detail";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { Redirect } from "wouter";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/haendler" component={Haendler} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/profil" component={Dashboard} />
+        <Route path="/haendler/:id" component={HaendlerDetail} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminGuard} />
         <Route component={NotFound} />

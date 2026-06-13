@@ -23,7 +23,8 @@ export default function Home() {
     if (brand) params.set("brand", brand);
     if (minYear) params.set("minYear", minYear);
     if (maxPrice) params.set("maxPrice", maxPrice);
-    navigate("/fahrzeuge");
+    const qs = params.toString();
+    navigate("/fahrzeuge" + (qs ? "?" + qs : ""));
   }
 
   return (

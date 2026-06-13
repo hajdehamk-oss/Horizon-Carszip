@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { ContactDialog } from "@/components/contact-dialog";
+import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -285,6 +286,13 @@ export default function FahrzeugDetail() {
               </h3>
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">Geprüfter Händler aus {vehicle.location}.</p>
+                {vehicle.dealerId && (
+                  <Link href={`/haendler/${vehicle.dealerId}`}>
+                    <button className="w-full text-sm text-primary hover:underline text-left flex items-center gap-1.5 py-1">
+                      <Car className="w-3.5 h-3.5" /> Alle Fahrzeuge dieses Händlers ansehen →
+                    </button>
+                  </Link>
+                )}
                 <Button
                   className="w-full font-bold h-12 bg-primary hover:bg-primary/90 text-white"
                   onClick={() => setContactOpen(true)}
