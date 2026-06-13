@@ -239,34 +239,10 @@ export default function Admin() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="approvals" className="whitespace-nowrap">Freigaben</TabsTrigger>
           </TabsList>
         </div>
 
         {/* ── Overview ── */}
-        <TabsContent value="overview">
-          <Card>
-            <CardHeader><CardTitle>Umsatzübersicht</CardTitle></CardHeader>
-            <CardContent className="pl-2">
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
-                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `CHF ${v}`} />
-                    <Tooltip
-                      cursor={{ fill: "rgba(255,255,255,0.1)" }}
-                      contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
-                      labelStyle={{ color: "hsl(var(--foreground))" }}
-                    />
-                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* ── Händler Panel ── */}
         <TabsContent value="haendler">
           <div className="space-y-8">
