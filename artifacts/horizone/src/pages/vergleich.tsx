@@ -133,7 +133,10 @@ export default function Vergleich() {
         </Button>
       </div>
 
-      {/* Car headers */}
+      {/* Car headers + table — horizontally scrollable on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="min-w-[520px]">
+
       <div className="grid grid-cols-[1fr_1fr_1fr] gap-0 rounded-xl overflow-hidden border border-border/50">
         <div className="bg-muted/30 p-4" />
         {[a, b].map((v, i) => (
@@ -163,7 +166,7 @@ export default function Vergleich() {
       </div>
 
       {/* Comparison table */}
-      <div className="rounded-xl border border-border/50 overflow-hidden">
+      <div className="rounded-xl border border-border/50 overflow-hidden mt-4">
         <table className="w-full">
           <colgroup>
             <col className="w-[30%]" />
@@ -228,6 +231,9 @@ export default function Vergleich() {
           </tbody>
         </table>
       </div>
+
+        </div>{/* min-w */}
+      </div>{/* overflow-x-auto */}
 
       {/* Verdict */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
