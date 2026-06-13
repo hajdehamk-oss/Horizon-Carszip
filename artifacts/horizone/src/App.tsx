@@ -17,6 +17,7 @@ import Admin from "@/pages/admin";
 import AdminLogin from "@/pages/admin-login";
 import HaendlerDetail from "@/pages/haendler-detail";
 import Vergleich from "@/pages/vergleich";
+import UeberUns from "@/pages/ueber-uns";
 import { CompareBar } from "@/components/compare-bar";
 import { CompareProvider } from "@/contexts/compare-context";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/profil" component={Dashboard} />
         <Route path="/haendler/:id" component={HaendlerDetail} />
         <Route path="/vergleich" component={Vergleich} />
+        <Route path="/ueber-uns" component={UeberUns} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminGuard} />
         <Route component={NotFound} />

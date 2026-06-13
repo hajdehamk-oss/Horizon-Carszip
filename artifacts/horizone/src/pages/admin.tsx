@@ -200,10 +200,8 @@ export default function Admin() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {isLoadingPlatform ? <Skeleton className="h-8 w-24" /> : (
-              <div className="text-2xl font-bold">{new Intl.NumberFormat("de-DE").format(platformStats?.totalUsers || 0)}</div>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">+{adminStats?.newUsersThisMonth || 0} diesen Monat</p>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-muted-foreground mt-1">+0 diesen Monat</p>
           </CardContent>
         </Card>
         <Card>
@@ -224,9 +222,7 @@ export default function Admin() {
             <Store className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {isLoadingPlatform ? <Skeleton className="h-8 w-24" /> : (
-              <div className="text-2xl font-bold">{new Intl.NumberFormat("de-DE").format(platformStats?.totalDealers || 0)}</div>
-            )}
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground mt-1">Geprüfte Partner</p>
           </CardContent>
         </Card>
