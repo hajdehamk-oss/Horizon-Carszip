@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { ContactDialog } from "@/components/contact-dialog";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,28 @@ export default function FahrzeugDetail() {
   const [contactOpen, setContactOpen] = useState(false);
   const [phoneVisible, setPhoneVisible] = useState(false);
   const [phoneContactOpen, setPhoneContactOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const images = vehicle?.images ?? [];
+
+  const startSlideshow = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (images.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setCurrentImageIndex(prev => (prev + 1) % images.length);
+    }, 5000);
+  }, [images.length]);
+
+  useEffect(() => {
+    startSlideshow();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [startSlideshow]);
+
+  function goToImage(index: number) {
+    setCurrentImageIndex(index);
+    startSlideshow();
+  }
 
   async function handleShare() {
     const url = window.location.href;
@@ -82,24 +104,100 @@ export default function FahrzeugDetail() {
         vehicleLocation={vehicle.location}
       />
 
-      {/* Image Gallery */}
-      <div className="w-full h-[40vh] md:h-[60vh] bg-muted rounded-xl overflow-hidden mb-8 relative">
-        <img
-          src={vehicle.images?.[0] || "/car-placeholder.png"}
-          alt={vehicle.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute top-4 right-4 flex gap-2">
-          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
-            onClick={handleShare} title="Teilen">
-            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-          </Button>
-          <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
-            onClick={() => toggleFavorite(vehicle.id)}
-            title={favorited ? "Von Merkliste entfernen" : "Zur Merkliste hinzufügen"}>
-            <Heart className={cn("w-4 h-4 transition-colors", favorited ? "fill-primary text-primary" : "")} />
-          </Button>
+      {/* Image Gallery — auto-advancing slideshow */}
+      <div className="mb-8 space-y-3">
+        <div className="w-full h-[40vh] md:h-[60vh] bg-muted rounded-xl overflow-hidden relative group">
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={`${vehicle.title} – Bild ${i + 1}`}
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
+                i === currentImageIndex ? "opacity-100" : "opacity-0"
+              )}
+            />
+          ))}
+          {images.length === 0 && (
+            <img src="/car-placeholder.png" alt={vehicle.title} className="w-full h-full object-cover" />
+          )}
+
+          {/* Prev / Next arrows */}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={() => goToImage((currentImageIndex - 1 + images.length) % images.length)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/90"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button
+                onClick={() => goToImage((currentImageIndex + 1) % images.length)}
+                className="absolute right-14 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/90"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </>
+          )}
+
+          {/* Dot indicators */}
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goToImage(i)}
+                  className={cn(
+                    "rounded-full transition-all",
+                    i === currentImageIndex
+                      ? "w-6 h-2 bg-white"
+                      : "w-2 h-2 bg-white/50 hover:bg-white/80"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Photo count badge */}
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-4 text-xs bg-background/70 backdrop-blur rounded-full px-2.5 py-1 text-foreground font-medium">
+              {currentImageIndex + 1} / {images.length}
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
+              onClick={handleShare} title="Teilen">
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+            </Button>
+            <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
+              onClick={() => toggleFavorite(vehicle.id)}
+              title={favorited ? "Von Merkliste entfernen" : "Zur Merkliste hinzufügen"}>
+              <Heart className={cn("w-4 h-4 transition-colors", favorited ? "fill-primary text-primary" : "")} />
+            </Button>
+          </div>
         </div>
+
+        {/* Thumbnail strip */}
+        {images.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {images.map((src, i) => (
+              <button
+                key={i}
+                onClick={() => goToImage(i)}
+                className={cn(
+                  "flex-shrink-0 w-20 h-14 md:w-28 md:h-18 rounded-lg overflow-hidden border-2 transition-all",
+                  i === currentImageIndex
+                    ? "border-primary opacity-100 scale-105"
+                    : "border-transparent opacity-60 hover:opacity-90"
+                )}
+              >
+                <img src={src} alt={`Vorschau ${i + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
