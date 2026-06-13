@@ -17,6 +17,7 @@ import AdminLogin from "@/pages/admin-login";
 import HaendlerDetail from "@/pages/haendler-detail";
 import Vergleich from "@/pages/vergleich";
 import { CompareBar } from "@/components/compare-bar";
+import { CompareProvider } from "@/contexts/compare-context";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { Redirect } from "wouter";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
@@ -77,10 +78,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" storageKey="horizone-theme">
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <AppContent />
-          </WouterRouter>
-          <Toaster />
+          <CompareProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AppContent />
+            </WouterRouter>
+            <Toaster />
+          </CompareProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
