@@ -55,19 +55,17 @@ export default function Dashboard() {
       </div>
 
       <Tabs defaultValue="favorites" className="w-full">
-        <div className="overflow-x-auto mb-8 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="p-1 bg-muted/50 rounded-lg w-max min-w-full">
-            <TabsTrigger value="favorites" className="rounded-md px-4 md:px-6 py-2.5 whitespace-nowrap">
-              <Heart className="w-4 h-4 mr-2" /> Gespeicherte Fahrzeuge
-              {favoriteIds.length > 0 && (
-                <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{favoriteIds.length}</span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-md px-4 md:px-6 py-2.5 whitespace-nowrap">
-              <Settings className="w-4 h-4 mr-2" /> Meine Angaben
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="w-full mb-8">
+          <TabsTrigger value="favorites" className="flex-1">
+            <Heart className="w-4 h-4 mr-2" /> Gespeicherte Fahrzeuge
+            {favoriteIds.length > 0 && (
+              <span className="ml-1.5 text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{favoriteIds.length}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1">
+            <Settings className="w-4 h-4 mr-2" /> Meine Angaben
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="favorites" className="space-y-6">
           <h2 className="text-2xl font-bold mb-6">
