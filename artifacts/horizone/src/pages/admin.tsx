@@ -1,13 +1,13 @@
 import { useState, useRef } from "react";
 import {
   useGetAdminStats, useGetPlatformStats, useListVehicles,
-  useCreateVehicle, useGetDashboardStats, useListInquiries
+  useCreateVehicle, useGetDashboardStats, useListInquiries, useUpdateInquiry
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users, Car, Euro, Store, CheckCircle, Clock, Plus, Trash2,
   Upload, X, LogOut, ArrowLeft, Eye, MessageSquare, Heart,
-  PlusCircle, MapPin, Calendar, Gauge
+  PlusCircle, MapPin, Calendar, Gauge, Mail, Phone, CheckCheck, Inbox
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -63,6 +63,8 @@ export default function Admin() {
   const { data: dealerStats, isLoading: isLoadingDealerStats } = useGetDashboardStats({ dealerId: DEALER_ID });
   const { data: dealerVehicles, isLoading: isLoadingDealerVehicles } = useListVehicles({ limit: 10 });
   const { data: dealerInquiries, isLoading: isLoadingDealerInquiries } = useListInquiries({ dealerId: DEALER_ID });
+  const { data: allInquiries, isLoading: isLoadingAllInquiries } = useListInquiries({});
+  const { mutateAsync: updateInquiry } = useUpdateInquiry();
   const { mutateAsync: createVehicle } = useCreateVehicle();
   const { token, logout } = useAdminAuth();
   const { toast } = useToast();
@@ -70,6 +72,7 @@ export default function Admin() {
   const [, navigate] = useLocation();
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
   const [form, setForm] = useState<VehicleFormData>(emptyForm);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -221,6 +224,14 @@ export default function Admin() {
             <TabsTrigger value="haendler" className="whitespace-nowrap">Händler-Panel</TabsTrigger>
             <TabsTrigger value="vehicles" className="whitespace-nowrap">Fahrzeuge</TabsTrigger>
             <TabsTrigger value="add-vehicle" className="whitespace-nowrap">Fahrzeug hinzufügen</TabsTrigger>
+            <TabsTrigger value="nachrichten" className="whitespace-nowrap">
+              Nachrichten
+              {allInquiries && allInquiries.filter((i: { status: string }) => i.status === "neu").length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-primary text-primary-foreground rounded-full">
+                  {allInquiries.filter((i: { status: string }) => i.status === "neu").length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="approvals" className="whitespace-nowrap">Freigaben</TabsTrigger>
           </TabsList>
         </div>
@@ -615,6 +626,154 @@ export default function Admin() {
                 </Button>
               </div>
             </form>
+          </div>
+        </TabsContent>
+
+        {/* ── Nachrichten ── */}
+        <TabsContent value="nachrichten">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[70vh]">
+            {/* Left: message list */}
+            <div className="lg:col-span-1 flex flex-col border border-border/50 rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-border/50 flex items-center gap-2 bg-muted/20">
+                <Inbox className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold text-sm">Eingang</h3>
+                <span className="ml-auto text-xs text-muted-foreground">{allInquiries?.length ?? 0} Nachrichten</span>
+              </div>
+              <div className="flex-1 overflow-y-auto divide-y divide-border/40">
+                {isLoadingAllInquiries ? (
+                  <div className="p-4 space-y-3">
+                    {[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                  </div>
+                ) : allInquiries && allInquiries.length > 0 ? (
+                  [...allInquiries]
+                    .sort((a: { createdAt: string }, b: { createdAt: string }) =>
+                      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    )
+                    .map((inq: { id: number; senderName: string; message: string; status: string; createdAt: string }) => {
+                      const isNew = inq.status === "neu";
+                      const isSelected = selectedInquiryId === inq.id;
+                      return (
+                        <button
+                          key={inq.id}
+                          onClick={() => setSelectedInquiryId(inq.id)}
+                          className={`w-full text-left p-4 transition-colors hover:bg-muted/30 ${isSelected ? "bg-primary/10 border-l-2 border-primary" : ""}`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-sm font-medium ${isNew ? "text-foreground" : "text-muted-foreground"}`}>
+                              {inq.senderName}
+                            </span>
+                            {isNew && (
+                              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{inq.message}</p>
+                          <p className="text-[11px] text-muted-foreground/60 mt-1">
+                            {new Date(inq.createdAt).toLocaleString("de-CH", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </button>
+                      );
+                    })
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground p-8">
+                    <MessageSquare className="w-10 h-10 opacity-20" />
+                    <p className="text-sm">Noch keine Nachrichten</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: message detail */}
+            <div className="lg:col-span-2 flex flex-col border border-border/50 rounded-xl overflow-hidden">
+              {(() => {
+                const inq = allInquiries?.find((i: { id: number }) => i.id === selectedInquiryId) as {
+                  id: number; senderName: string; senderEmail: string; senderPhone?: string;
+                  message: string; status: string; createdAt: string; vehicleId: number;
+                } | undefined;
+
+                if (!inq) {
+                  return (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                      <MessageSquare className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">Wählen Sie eine Nachricht aus</p>
+                    </div>
+                  );
+                }
+
+                const isNew = inq.status === "neu";
+
+                async function markReplied() {
+                  try {
+                    await updateInquiry({ id: inq!.id, data: { status: "beantwortet" } });
+                    await queryClient.invalidateQueries();
+                    toast({ description: "Als beantwortet markiert." });
+                  } catch {
+                    toast({ description: "Fehler beim Aktualisieren.", variant: "destructive" });
+                  }
+                }
+
+                return (
+                  <>
+                    {/* Header */}
+                    <div className="p-5 border-b border-border/50 flex items-start justify-between gap-4 bg-muted/10">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-base">{inq.senderName}</h3>
+                          <Badge variant={isNew ? "default" : "outline"} className="text-xs">
+                            {isNew ? "Neu" : "Beantwortet"}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{inq.senderEmail}</span>
+                          {inq.senderPhone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{inq.senderPhone}</span>}
+                          <span className="flex items-center gap-1"><Car className="w-3 h-3" />Fahrzeug #{inq.vehicleId}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(inq.createdAt).toLocaleString("de-CH")}
+                        </span>
+                        {isNew && (
+                          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={markReplied}>
+                            <CheckCheck className="w-3.5 h-3.5" /> Als beantwortet markieren
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Message bubble */}
+                    <div className="flex-1 overflow-y-auto p-6">
+                      <div className="flex gap-3">
+                        <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
+                          {inq.senderName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="bg-muted/50 rounded-2xl rounded-tl-none p-4 text-sm leading-relaxed whitespace-pre-wrap max-w-prose">
+                            {inq.message}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-2 ml-1">
+                            {new Date(inq.createdAt).toLocaleString("de-CH", { weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick reply actions */}
+                    <div className="p-4 border-t border-border/50 bg-muted/10 flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="gap-1.5"
+                        onClick={() => window.open(`mailto:${inq.senderEmail}?subject=Re: Anfrage zu Fahrzeug %23${inq.vehicleId}`, "_blank")}>
+                        <Mail className="w-3.5 h-3.5" /> Per E-Mail antworten
+                      </Button>
+                      {inq.senderPhone && (
+                        <Button size="sm" variant="outline" className="gap-1.5"
+                          onClick={() => window.open(`tel:${inq.senderPhone}`, "_blank")}>
+                          <Phone className="w-3.5 h-3.5" /> Anrufen
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </TabsContent>
 

@@ -99,12 +99,16 @@ export default function FahrzeugDetail() {
         onClose={() => setContactOpen(false)}
         vehicleTitle={vehicle.title}
         vehicleLocation={vehicle.location}
+        vehicleId={vehicle.id}
+        dealerId={vehicle.dealerId}
       />
       <ContactDialog
         open={phoneContactOpen}
         onClose={() => setPhoneContactOpen(false)}
         vehicleTitle={vehicle.title}
         vehicleLocation={vehicle.location}
+        vehicleId={vehicle.id}
+        dealerId={vehicle.dealerId}
       />
 
       {/* Image Gallery — auto-advancing slideshow */}

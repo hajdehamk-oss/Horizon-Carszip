@@ -56,7 +56,7 @@ function AppContent() {
   const { loaded, hasName, updateProfile } = useVisitorProfile();
   const [location] = useLocation();
 
-  const isProfilePage = location === "/dashboard" || location === "/profil";
+  const isProfilePage = location === "/dashboard" || location === "/profil" || location.startsWith("/admin");
 
   return (
     <>
