@@ -25,13 +25,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 const chartData = [
-  { name: "Jan", revenue: 2990 },
-  { name: "Feb", revenue: 5980 },
-  { name: "Mär", revenue: 5980 },
-  { name: "Apr", revenue: 8970 },
-  { name: "Mai", revenue: 8970 },
-  { name: "Jun", revenue: 11960 },
-  { name: "Jul", revenue: 11960 },
+  { name: "Jan", revenue: 0 },
+  { name: "Feb", revenue: 0 },
+  { name: "Mär", revenue: 0 },
+  { name: "Apr", revenue: 0 },
+  { name: "Mai", revenue: 0 },
+  { name: "Jun", revenue: 0 },
+  { name: "Jul", revenue: 0 },
 ];
 
 const DEALER_ID = 1;
