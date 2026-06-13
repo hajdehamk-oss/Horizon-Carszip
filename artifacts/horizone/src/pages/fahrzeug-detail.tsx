@@ -4,13 +4,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone } from "lucide-react";
+import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone, ArrowRightLeft } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { ContactDialog } from "@/components/contact-dialog";
 import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCompare } from "@/hooks/use-compare";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,6 +28,7 @@ export default function FahrzeugDetail() {
   });
 
   const { isFavorited, toggleFavorite } = useFavorites();
+  const { isInCompare, toggleCompare, isFull } = useCompare();
   const [anzahlung, setAnzahlung] = useState(5000);
   const [laufzeit, setLaufzeit] = useState(48);
   const [copied, setCopied] = useState(false);
@@ -176,6 +178,18 @@ export default function FahrzeugDetail() {
               onClick={() => toggleFavorite(vehicle.id)}
               title={favorited ? "Von Merkliste entfernen" : "Zur Merkliste hinzufügen"}>
               <Heart className={cn("w-4 h-4 transition-colors", favorited ? "fill-primary text-primary" : "")} />
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className={cn(
+                "rounded-full bg-background/80 backdrop-blur",
+                isInCompare(vehicle.id) && "ring-2 ring-primary"
+              )}
+              onClick={() => { if (!isFull || isInCompare(vehicle.id)) toggleCompare(vehicle.id); }}
+              title={isInCompare(vehicle.id) ? "Aus Vergleich entfernen" : isFull ? "Vergleich ist voll" : "Zum Vergleich hinzufügen"}
+            >
+              <ArrowRightLeft className={cn("w-4 h-4 transition-colors", isInCompare(vehicle.id) ? "text-primary" : "")} />
             </Button>
           </div>
         </div>

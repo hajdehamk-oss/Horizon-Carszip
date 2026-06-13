@@ -1,11 +1,12 @@
 import { Link } from "wouter";
-import { Car, MapPin, Gauge, Calendar, Fuel, Heart } from "lucide-react";
+import { Car, MapPin, Gauge, Calendar, Fuel, Heart, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Vehicle } from "@workspace/api-client-react";
 import sedanUrl from "@/assets/car-sedan.png";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCompare } from "@/hooks/use-compare";
 import { cn } from "@/lib/utils";
 
 interface VehicleCardProps {
@@ -15,7 +16,9 @@ interface VehicleCardProps {
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   const imageUrl = vehicle.images?.[0] || sedanUrl;
   const { isFavorited, toggleFavorite } = useFavorites();
+  const { isInCompare, toggleCompare, isFull } = useCompare();
   const favorited = isFavorited(vehicle.id);
+  const comparing = isInCompare(vehicle.id);
 
   return (
     <Card className="overflow-hidden flex flex-col group border-border/50 hover:border-primary/50 transition-all hover:shadow-lg bg-card text-card-foreground">
@@ -95,12 +98,31 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           <MapPin className="w-4 h-4" />
           <span className="truncate max-w-[120px]">{vehicle.location}</span>
         </div>
-        <div className="pt-3 text-xs opacity-70">
-          {vehicle.createdAt ? (() => {
-            const days = Math.floor((Date.now() - new Date(vehicle.createdAt).getTime()) / 86400000);
-            return days === 0 ? "Heute" : `Vor ${days} Tag${days === 1 ? "" : "en"}`;
-          })() : "Neu"}
-        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "pt-3 h-auto gap-1.5 text-xs font-medium transition-colors",
+            comparing
+              ? "text-primary"
+              : isFull && !comparing
+                ? "text-muted-foreground/40 cursor-not-allowed"
+                : "text-muted-foreground hover:text-primary"
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!isFull || comparing) toggleCompare(vehicle.id);
+          }}
+          title={
+            comparing ? "Aus Vergleich entfernen"
+            : isFull ? "Vergleich ist voll (max. 2)"
+            : "Zum Vergleich hinzufügen"
+          }
+        >
+          <ArrowRightLeft className="w-3.5 h-3.5" />
+          {comparing ? "Im Vergleich" : "Vergleichen"}
+        </Button>
       </CardFooter>
     </Card>
   );
