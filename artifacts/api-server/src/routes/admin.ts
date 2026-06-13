@@ -5,25 +5,35 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env["ADMIN_PASSWORD"];
-if (!ADMIN_PASSWORD) {
-  throw new Error("ADMIN_PASSWORD environment variable is not set");
+function getAdminPassword(): string | null {
+  return process.env["ADMIN_PASSWORD"] ?? null;
 }
-const ADMIN_TOKEN = Buffer.from(`horizone:${ADMIN_PASSWORD}`).toString("base64");
+
+function getAdminToken(): string | null {
+  const pw = getAdminPassword();
+  if (!pw) return null;
+  return Buffer.from(`horizone:${pw}`).toString("base64");
+}
 
 export function verifyAdminToken(req: { headers: Record<string, string | string[] | undefined> }): boolean {
+  const expectedToken = getAdminToken();
+  if (!expectedToken) return false;
   const auth = req.headers["authorization"] as string | undefined;
   if (!auth) return false;
   const token = auth.replace(/^Bearer\s+/, "");
-  return token === ADMIN_TOKEN;
+  return token === expectedToken;
 }
 
 router.post("/admin/login", (req, res) => {
+  const pw = getAdminPassword();
+  if (!pw) {
+    return res.status(503).json({ error: "Admin-Login nicht konfiguriert" });
+  }
   const { password } = req.body as { password?: string };
-  if (!password || password !== ADMIN_PASSWORD) {
+  if (!password || password !== pw) {
     return res.status(401).json({ error: "Ungültiges Passwort" });
   }
-  res.json({ token: ADMIN_TOKEN });
+  res.json({ token: getAdminToken() });
 });
 
 router.delete("/vehicles/:id/admin", async (req, res) => {

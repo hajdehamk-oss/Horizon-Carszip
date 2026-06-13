@@ -16,6 +16,10 @@ import Admin from "@/pages/admin";
 import AdminLogin from "@/pages/admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { Redirect } from "wouter";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
+
+const ADMIN_TOKEN_KEY = "horizone_admin_token";
+setAuthTokenGetter(() => localStorage.getItem(ADMIN_TOKEN_KEY));
 
 const queryClient = new QueryClient();
 
