@@ -7,9 +7,10 @@ import { Car } from "lucide-react";
 interface VisitorNameDialogProps {
   open: boolean;
   onSave: (name: string) => void;
+  onSkip: () => void;
 }
 
-export function VisitorNameDialog({ open, onSave }: VisitorNameDialogProps) {
+export function VisitorNameDialog({ open, onSave, onSkip }: VisitorNameDialogProps) {
   const [name, setName] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
@@ -19,7 +20,7 @@ export function VisitorNameDialog({ open, onSave }: VisitorNameDialogProps) {
   }
 
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onSkip(); }}>
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader className="items-center text-center">
           <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-3 mx-auto">
@@ -30,7 +31,7 @@ export function VisitorNameDialog({ open, onSave }: VisitorNameDialogProps) {
             Wie dürfen wir Sie ansprechen? Mit Ihrem Namen speichern wir Ihre Fahrzeuge und Nachrichten für Sie.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <Input
             autoFocus
             placeholder="Ihr Name (z.B. Luca Müller)"
@@ -44,6 +45,9 @@ export function VisitorNameDialog({ open, onSave }: VisitorNameDialogProps) {
             disabled={!name.trim()}
           >
             Weiter
+          </Button>
+          <Button type="button" variant="ghost" className="w-full" onClick={onSkip}>
+            Später
           </Button>
         </form>
       </DialogContent>

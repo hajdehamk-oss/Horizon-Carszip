@@ -35,9 +35,9 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             </Badge>
           )}
           <div className="absolute bottom-3 right-3 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded text-lg font-bold">
-            {new Intl.NumberFormat("de-DE", {
+            {new Intl.NumberFormat("de-CH", {
               style: "currency",
-              currency: "EUR",
+              currency: "CHF",
               maximumFractionDigits: 0,
             }).format(vehicle.price)}
           </div>

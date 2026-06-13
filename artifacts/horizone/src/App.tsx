@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -63,16 +63,18 @@ function ScrollToTop() {
 function AppContent() {
   const { loaded, hasName, updateProfile } = useVisitorProfile();
   const [location] = useLocation();
+  const [dismissed, setDismissed] = useState(false);
 
   const isProfilePage = location === "/dashboard" || location === "/profil" || location.startsWith("/admin");
 
   return (
     <>
       <ScrollToTop />
-      {loaded && !hasName && !isProfilePage && (
+      {loaded && !hasName && !isProfilePage && !dismissed && (
         <VisitorNameDialog
           open={true}
-          onSave={(name) => updateProfile({ name })}
+          onSave={(name) => { updateProfile({ name }); setDismissed(false); }}
+          onSkip={() => setDismissed(true)}
         />
       )}
       <Router />

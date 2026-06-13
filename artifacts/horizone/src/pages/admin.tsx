@@ -173,10 +173,10 @@ export default function Admin() {
           <CardContent>
             {isLoadingAdmin ? <Skeleton className="h-8 w-24" /> : (
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(adminStats?.totalRevenue || 0)}
+                {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(adminStats?.totalRevenue || 0)}
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">{adminStats?.totalDealerSubscriptions || 0} aktive Abos à €299</p>
+            <p className="text-xs text-muted-foreground mt-1">{adminStats?.totalDealerSubscriptions || 0} aktive Abos à CHF 299</p>
           </CardContent>
         </Card>
         <Card>
@@ -246,7 +246,7 @@ export default function Admin() {
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `€${v}`} />
+                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `CHF ${v}`} />
                     <Tooltip
                       cursor={{ fill: "rgba(255,255,255,0.1)" }}
                       contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
@@ -364,7 +364,7 @@ export default function Admin() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="font-bold text-primary">
-                              {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(vehicle.price)}
+                              {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(vehicle.price)}
                             </div>
                             {vehicle.featured && (
                               <Badge className="text-xs mt-1 bg-primary/10 text-primary border-none">Top Inserat</Badge>
@@ -445,7 +445,7 @@ export default function Admin() {
                       <div className="flex items-center gap-3 shrink-0">
                         {vehicle.featured && <Badge className="text-xs bg-primary/10 text-primary border-none">Top</Badge>}
                         <span className="font-bold text-primary text-sm">
-                          {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(vehicle.price)}
+                          {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(vehicle.price)}
                         </span>
                         <Button
                           size="icon" variant="ghost"
@@ -526,7 +526,7 @@ export default function Admin() {
                     <div className="space-y-1.5"><Label>Baujahr *</Label>
                       <Input type="number" value={form.year} onChange={e => setField("year", e.target.value)} min={1900} max={2030} required />
                     </div>
-                    <div className="space-y-1.5"><Label>Preis (€) *</Label>
+                    <div className="space-y-1.5"><Label>Preis (CHF) *</Label>
                       <Input type="number" value={form.price} onChange={e => setField("price", e.target.value)} placeholder="z.B. 89900" required />
                     </div>
                     <div className="space-y-1.5"><Label>Kilometerstand *</Label>

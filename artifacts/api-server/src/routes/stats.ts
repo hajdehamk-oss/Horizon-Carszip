@@ -112,7 +112,7 @@ router.get("/stats/admin", async (req, res) => {
     const dealerCount = dealers[0]?.count ?? 0;
 
     res.json({
-      totalRevenue: dealerCount * 299,
+      totalRevenue: 0,
       newUsersThisMonth: newUsers[0]?.count ?? 0,
       newVehiclesThisMonth: newVehicles[0]?.count ?? 0,
       pendingApprovals: 3,

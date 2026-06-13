@@ -79,7 +79,7 @@ export default function Home() {
               />
               <Input
                 type="number"
-                placeholder="Preis bis (€)"
+                placeholder="Preis bis (CHF)"
                 className="bg-background/70 h-11"
                 value={maxPrice}
                 onChange={e => setMaxPrice(e.target.value)}

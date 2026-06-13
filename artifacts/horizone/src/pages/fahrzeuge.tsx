@@ -127,7 +127,7 @@ export default function Fahrzeuge() {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-semibold">Preis (€)</Label>
+        <Label className="text-sm font-semibold">Preis (CHF)</Label>
         <div className="grid grid-cols-2 gap-2">
           <Input type="number" placeholder="Von" className="h-10"
             value={pending.minPrice}
