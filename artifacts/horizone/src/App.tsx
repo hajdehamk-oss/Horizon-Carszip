@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -51,10 +51,13 @@ function Router() {
 
 function AppContent() {
   const { loaded, hasName, updateProfile } = useVisitorProfile();
+  const [location] = useLocation();
+
+  const isProfilePage = location === "/dashboard" || location === "/profil";
 
   return (
     <>
-      {loaded && !hasName && (
+      {loaded && !hasName && !isProfilePage && (
         <VisitorNameDialog
           open={true}
           onSave={(name) => updateProfile({ name })}

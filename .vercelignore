@@ -1,0 +1,8 @@
+.local/
+.cache/
+node_modules/
+attached_assets/
+artifacts/horizone/node_modules/
+artifacts/api-server/node_modules/
+artifacts/mockup-sandbox/
+lib/*/node_modules/
