@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone, ArrowRightLeft } from "lucide-react";
+import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone, ArrowRightLeft, Maximize2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { ContactDialog } from "@/components/contact-dialog";
 import { Link } from "wouter";
@@ -36,6 +36,7 @@ export default function FahrzeugDetail() {
   const [phoneVisible, setPhoneVisible] = useState(false);
   const [phoneContactOpen, setPhoneContactOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const images = vehicle?.images ?? [];
@@ -175,6 +176,10 @@ export default function FahrzeugDetail() {
           {/* Action buttons */}
           <div className="absolute top-4 right-4 flex gap-2">
             <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
+              onClick={() => setLightboxOpen(true)} title="Vollbild">
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+            <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
               onClick={handleShare} title="Teilen">
               {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
             </Button>
@@ -196,6 +201,9 @@ export default function FahrzeugDetail() {
               <ArrowRightLeft className={cn("w-4 h-4 transition-colors", isInCompare(vehicle.id) ? "text-primary" : "")} />
             </Button>
           </div>
+
+          {/* Click anywhere on image to open lightbox */}
+          <div className="absolute inset-0 cursor-zoom-in" onClick={() => setLightboxOpen(true)} />
         </div>
 
         {/* Thumbnail strip */}
@@ -218,6 +226,73 @@ export default function FahrzeugDetail() {
           </div>
         )}
       </div>
+
+      {/* Lightbox overlay */}
+      {lightboxOpen && images.length > 0 && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium">
+            {currentImageIndex + 1} / {images.length}
+          </div>
+
+          {/* Prev */}
+          {images.length > 1 && (
+            <button
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+              onClick={(e) => { e.stopPropagation(); goToImage((currentImageIndex - 1 + images.length) % images.length); }}
+            >
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </button>
+          )}
+
+          {/* Full image — object-contain so nothing is cropped */}
+          <img
+            src={images[currentImageIndex]}
+            alt={`${vehicle.title} – Bild ${currentImageIndex + 1}`}
+            className="max-w-full max-h-full w-full h-full object-contain select-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Next */}
+          {images.length > 1 && (
+            <button
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+              onClick={(e) => { e.stopPropagation(); goToImage((currentImageIndex + 1) % images.length); }}
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </button>
+          )}
+
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-4 overflow-x-auto max-w-full">
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); goToImage(i); }}
+                  className={cn(
+                    "flex-shrink-0 w-14 h-10 rounded-md overflow-hidden border-2 transition-all",
+                    i === currentImageIndex ? "border-white opacity-100" : "border-transparent opacity-40 hover:opacity-70"
+                  )}
+                >
+                  <img src={src} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
