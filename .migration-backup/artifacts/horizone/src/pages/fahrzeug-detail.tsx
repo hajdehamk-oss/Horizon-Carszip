@@ -154,7 +154,7 @@ export default function FahrzeugDetail() {
                       ? "w-6 h-2 bg-white"
                       : "w-2 h-2 bg-white/50 hover:bg-white/80"
                   )}
-                />
+                />zz
               ))}
             </div>
           )}
