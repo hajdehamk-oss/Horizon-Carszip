@@ -4,7 +4,7 @@ import { useClientAuth, getClientToken } from "@/hooks/use-client-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, LogOut, CheckCircle2, Circle, Clock } from "lucide-react";
+import { Car, LogOut, CheckCircle2, Clock, Hourglass, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const ORDER_STEPS = [
@@ -19,13 +19,11 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
   return (
     <div className="w-full py-6">
       <div className="relative flex items-start justify-between">
-        {/* connecting line */}
         <div className="absolute top-5 left-0 right-0 h-0.5 bg-border" />
         <div
           className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-700"
           style={{ width: currentStep === 0 ? "0%" : `${(currentStep / (ORDER_STEPS.length - 1)) * 100}%` }}
         />
-
         {ORDER_STEPS.map((step, i) => {
           const done = i < currentStep;
           const active = i === currentStep;
@@ -53,6 +51,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
 interface Order {
   id: number;
   currentStep: number;
+  status: string;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -90,6 +89,10 @@ export default function MeineBestellungen() {
 
   if (!isLoggedIn) return null;
 
+  const pendingOrders = orders.filter(o => o.status === "pending");
+  const activeOrders = orders.filter(o => o.status !== "pending" && o.status !== "rejected");
+  const rejectedOrders = orders.filter(o => o.status === "rejected");
+
   return (
     <div className="container py-8 max-w-3xl space-y-8">
       <div className="flex items-center justify-between">
@@ -116,62 +119,119 @@ export default function MeineBestellungen() {
           </div>
           <div>
             <p className="font-medium">Noch keine Bestellungen</p>
-            <p className="text-sm text-muted-foreground">Ihr Händler erstellt eine Bestellung für Sie, sobald Sie ein Fahrzeug gekauft haben.</p>
+            <p className="text-sm text-muted-foreground">Klicken Sie auf "Jetzt vorbestellen" auf einer Fahrzeugseite, um eine Anfrage zu stellen.</p>
           </div>
           <Button variant="outline" onClick={() => navigate("/fahrzeuge")}>Fahrzeuge entdecken</Button>
         </div>
       )}
 
-      {!loading && orders.map(order => {
-        const step = ORDER_STEPS[order.currentStep] ?? ORDER_STEPS[0];
-        const isDelivered = order.currentStep >= ORDER_STEPS.length - 1;
-        const image = order.vehicleImages?.[0];
-
-        return (
-          <div key={order.id} className="rounded-xl border border-border/50 bg-card overflow-hidden">
-            <div className="flex items-center gap-4 p-4 border-b border-border/50">
-              <div className="w-20 h-14 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
-                {image
-                  ? <img src={image} alt={order.vehicleTitle} className="w-full h-full object-cover" />
-                  : <Car className="w-7 h-7 text-muted-foreground" />
-                }
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate">{order.vehicleTitle}</h3>
-                <p className="text-sm text-muted-foreground">{order.vehicleBrand} {order.vehicleModel} · {order.vehicleYear}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <Badge variant={isDelivered ? "default" : "secondary"} className="gap-1">
-                  {isDelivered ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                  {step.label.replace("\n", " ")}
-                </Badge>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Bestellung #{order.id}
-                </p>
-              </div>
-            </div>
-
-            <div className="px-6">
-              <ProgressBar currentStep={order.currentStep} />
-            </div>
-
-            {order.notes && (
-              <div className="mx-4 mb-4 px-4 py-3 rounded-lg bg-muted/40 border border-border/40">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Notiz vom Händler</p>
-                <p className="text-sm">{order.notes}</p>
-              </div>
-            )}
-
-            <div className="px-4 pb-4 flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Circle className="w-2 h-2 fill-primary text-primary" />
-                Bestellt am {new Date(order.createdAt).toLocaleDateString("de-CH")}
-              </span>
-              <span>Zuletzt aktualisiert: {new Date(order.updatedAt).toLocaleDateString("de-CH")}</span>
-            </div>
+      {/* Pending orders */}
+      {pendingOrders.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Hourglass className="w-4 h-4 text-amber-500" />
+            <h2 className="font-semibold text-sm">Warte auf Bestätigung</h2>
+            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">{pendingOrders.length}</Badge>
           </div>
-        );
-      })}
+          {pendingOrders.map(order => (
+            <PendingCard key={order.id} order={order} />
+          ))}
+        </div>
+      )}
+
+      {/* Active orders with progress */}
+      {activeOrders.length > 0 && (
+        <div className="space-y-4">
+          {pendingOrders.length > 0 && (
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+              <h2 className="font-semibold text-sm">Aktive Bestellungen</h2>
+            </div>
+          )}
+          {activeOrders.map(order => (
+            <ActiveCard key={order.id} order={order} />
+          ))}
+        </div>
+      )}
+
+      {/* Rejected orders */}
+      {rejectedOrders.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-destructive" />
+            <h2 className="font-semibold text-sm text-muted-foreground">Abgelehnte Anfragen</h2>
+          </div>
+          {rejectedOrders.map(order => (
+            <PendingCard key={order.id} order={order} rejected />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PendingCard({ order, rejected }: { order: Order; rejected?: boolean }) {
+  const image = order.vehicleImages?.[0];
+  return (
+    <div className={`rounded-xl border bg-card overflow-hidden ${rejected ? "border-destructive/30 opacity-60" : "border-amber-300/40 bg-amber-500/5"}`}>
+      <div className="flex items-center gap-4 p-4">
+        <div className="w-16 h-12 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+          {image ? <img src={image} alt={order.vehicleTitle} className="w-full h-full object-cover" /> : <Car className="w-6 h-6 text-muted-foreground" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm truncate">{order.vehicleTitle}</h3>
+          <p className="text-xs text-muted-foreground">{order.vehicleBrand} {order.vehicleModel} · {order.vehicleYear}</p>
+          {order.notes && <p className="text-xs text-muted-foreground mt-1 italic">„{order.notes}"</p>}
+        </div>
+        <Badge variant={rejected ? "destructive" : "outline"} className={`shrink-0 gap-1 ${!rejected ? "text-amber-600 border-amber-400" : ""}`}>
+          {rejected ? <><XCircle className="w-3 h-3" /> Abgelehnt</> : <><Hourglass className="w-3 h-3" /> Ausstehend</>}
+        </Badge>
+      </div>
+      <div className="px-4 pb-3 text-xs text-muted-foreground">
+        {rejected
+          ? "Ihre Anfrage wurde leider abgelehnt."
+          : "Ihr Händler prüft Ihre Anfrage und bestätigt sie in Kürze."}
+      </div>
+    </div>
+  );
+}
+
+function ActiveCard({ order }: { order: Order }) {
+  const step = ORDER_STEPS[order.currentStep] ?? ORDER_STEPS[0];
+  const isDelivered = order.currentStep >= ORDER_STEPS.length - 1;
+  const image = order.vehicleImages?.[0];
+
+  return (
+    <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
+      <div className="flex items-center gap-4 p-4 border-b border-border/50">
+        <div className="w-20 h-14 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+          {image ? <img src={image} alt={order.vehicleTitle} className="w-full h-full object-cover" /> : <Car className="w-7 h-7 text-muted-foreground" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold truncate">{order.vehicleTitle}</h3>
+          <p className="text-sm text-muted-foreground">{order.vehicleBrand} {order.vehicleModel} · {order.vehicleYear}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <Badge variant={isDelivered ? "default" : "secondary"} className="gap-1">
+            {isDelivered ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+            {step.label.replace("\n", " ")}
+          </Badge>
+          <p className="text-xs text-muted-foreground mt-1">Bestellung #{order.id}</p>
+        </div>
+      </div>
+      <div className="px-6">
+        <ProgressBar currentStep={order.currentStep} />
+      </div>
+      {order.notes && (
+        <div className="mx-4 mb-4 px-4 py-3 rounded-lg bg-muted/40 border border-border/40">
+          <p className="text-xs font-medium text-muted-foreground mb-0.5">Notiz vom Händler</p>
+          <p className="text-sm">{order.notes}</p>
+        </div>
+      )}
+      <div className="px-4 pb-4 flex items-center justify-between text-xs text-muted-foreground">
+        <span>Bestellt am {new Date(order.createdAt).toLocaleDateString("de-CH")}</span>
+        <span>Zuletzt aktualisiert: {new Date(order.updatedAt).toLocaleDateString("de-CH")}</span>
+      </div>
     </div>
   );
 }

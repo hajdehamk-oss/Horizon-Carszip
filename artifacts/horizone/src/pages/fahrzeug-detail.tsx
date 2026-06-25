@@ -19,6 +19,7 @@ import {
   Heart,
   ShieldCheck,
   Check,
+  CheckCircle2,
   Phone,
   ArrowRightLeft,
   Maximize2,
@@ -35,6 +36,9 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { useCompare } from "@/hooks/use-compare";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useClientAuth, getClientToken } from "@/hooks/use-client-auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ShoppingCart, Loader2 } from "lucide-react";
 
 export default function FahrzeugDetail() {
   const params = useParams();
@@ -53,12 +57,17 @@ export default function FahrzeugDetail() {
 
   const { isFavorited, toggleFavorite } = useFavorites();
   const { isInCompare, toggleCompare, isFull } = useCompare();
+  const { isLoggedIn } = useClientAuth();
   const [anzahlung, setAnzahlung] = useState(5000);
   const [laufzeit, setLaufzeit] = useState(48);
   const [copied, setCopied] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [phoneVisible, setPhoneVisible] = useState(false);
   const [phoneContactOpen, setPhoneContactOpen] = useState(false);
+  const [preorderOpen, setPreorderOpen] = useState(false);
+  const [preorderMessage, setPreorderMessage] = useState("");
+  const [preorderLoading, setPreorderLoading] = useState(false);
+  const [preorderDone, setPreorderDone] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -83,6 +92,27 @@ export default function FahrzeugDetail() {
   function goToImage(index: number) {
     setCurrentImageIndex(index);
     startSlideshow();
+  }
+
+  async function handlePreorder() {
+    setPreorderLoading(true);
+    try {
+      const token = getClientToken();
+      const res = await fetch("/api/orders/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ vehicleId: vehicle!.id, message: preorderMessage || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        return;
+      }
+      setPreorderDone(true);
+      toast({ title: "Anfrage gesendet!", description: "Ihr Händler bestätigt Ihre Vorbestellung in Kürze." });
+    } finally {
+      setPreorderLoading(false);
+    }
   }
 
   async function handleShare() {
@@ -148,6 +178,57 @@ export default function FahrzeugDetail() {
         vehicleId={vehicle.id}
         dealerId={vehicle.dealerId}
       />
+
+      {/* Pre-order dialog */}
+      <Dialog open={preorderOpen} onOpenChange={open => { setPreorderOpen(open); if (!open) { setPreorderDone(false); setPreorderMessage(""); } }}>
+        <DialogContent className="max-w-md">
+          {preorderDone ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-primary" /> Anfrage gesendet!
+                </DialogTitle>
+                <DialogDescription>
+                  Ihr Händler prüft Ihre Vorbestellung und bestätigt sie in Kürze. Sie können den Status unter <strong>Meine Bestellungen</strong> verfolgen.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button onClick={() => setPreorderOpen(false)} variant="outline">Schliessen</Button>
+                <Button asChild>
+                  <Link href="/meine-bestellungen">Bestellungen ansehen →</Link>
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" /> Fahrzeug vorbestellen
+                </DialogTitle>
+                <DialogDescription>
+                  Senden Sie eine Vorbestellungsanfrage für <strong>{vehicle.title}</strong>. Der Händler bestätigt Ihre Anfrage und startet die Lieferverfolgung.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <label className="text-sm font-medium">Nachricht (optional)</label>
+                <textarea
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring min-h-[80px] resize-none"
+                  placeholder="z.B. Gewünschte Farbe, Lieferdatum, Sonderwünsche…"
+                  value={preorderMessage}
+                  onChange={e => setPreorderMessage(e.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreorderOpen(false)}>Abbrechen</Button>
+                <Button onClick={handlePreorder} disabled={preorderLoading} className="gap-2">
+                  {preorderLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Anfrage senden
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Image Gallery — auto-advancing slideshow */}
       <div className="mb-8 space-y-3">
@@ -559,8 +640,24 @@ export default function FahrzeugDetail() {
                     </button>
                   </Link>
                 )}
+                {/* Pre-order CTA */}
+                {isLoggedIn ? (
+                  <Button
+                    className="w-full font-bold h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => setPreorderOpen(true)}
+                  >
+                    <ShoppingCart className="w-4 h-4" /> Jetzt vorbestellen
+                  </Button>
+                ) : (
+                  <Link href="/login">
+                    <Button className="w-full font-bold h-12 gap-2 bg-primary hover:bg-primary/90 text-white">
+                      <ShoppingCart className="w-4 h-4" /> Vorbestellen (Login erforderlich)
+                    </Button>
+                  </Link>
+                )}
                 <Button
-                  className="w-full font-bold h-12 bg-primary hover:bg-primary/90 text-white"
+                  variant="outline"
+                  className="w-full h-10"
                   onClick={() => setContactOpen(true)}
                 >
                   Nachricht senden

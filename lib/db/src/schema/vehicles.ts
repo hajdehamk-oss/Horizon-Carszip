@@ -76,6 +76,7 @@ export const ordersTable = pgTable("orders", {
   vehicleId: integer("vehicle_id").notNull().references(() => vehiclesTable.id),
   userId: integer("user_id").notNull().references(() => usersTable.id),
   currentStep: integer("current_step").notNull().default(0),
+  status: text("status").notNull().default("pending"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

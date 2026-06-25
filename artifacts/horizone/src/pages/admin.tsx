@@ -35,7 +35,7 @@ const ORDER_STEPS_LABELS = [
 ];
 
 interface AdminOrder {
-  id: number; currentStep: number; notes: string | null;
+  id: number; currentStep: number; status: string; notes: string | null;
   createdAt: string; updatedAt: string;
   vehicleId: number; vehicleTitle: string; vehicleBrand: string;
   vehicleModel: string; vehicleYear: number;
@@ -187,13 +187,72 @@ function OrdersPanel({ token }: { token: string }) {
         </div>
       )}
 
-      {!loading && orders.map(order => {
+      {/* Pending pre-order requests */}
+      {!loading && orders.filter(o => o.status === "pending").length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-500">
+            <Inbox className="w-4 h-4" />
+            Neue Vorbestellungsanfragen
+            <Badge className="bg-amber-500 text-white text-xs">{orders.filter(o => o.status === "pending").length}</Badge>
+          </div>
+          {orders.filter(o => o.status === "pending").map(order => (
+            <Card key={order.id} className="border-amber-300/50 bg-amber-500/5 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                    <Car className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{order.vehicleTitle ?? `${order.vehicleBrand} ${order.vehicleModel}`}</p>
+                    <p className="text-xs text-muted-foreground">{order.userName} · {order.userEmail}</p>
+                    {order.notes && <p className="text-xs text-muted-foreground italic mt-0.5">„{order.notes}"</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm" variant="ghost"
+                    className="text-destructive gap-1.5 hover:bg-destructive/10"
+                    disabled={saving === order.id}
+                    onClick={async () => {
+                      setSaving(order.id);
+                      await fetch(`/api/orders/${order.id}`, { method: "PATCH", headers: authHeaders, body: JSON.stringify({ status: "rejected" }) });
+                      toast({ title: "Anfrage abgelehnt" });
+                      await loadAll();
+                      setSaving(null);
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" /> Ablehnen
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-primary"
+                    disabled={saving === order.id}
+                    onClick={async () => {
+                      setSaving(order.id);
+                      await fetch(`/api/orders/${order.id}`, { method: "PATCH", headers: authHeaders, body: JSON.stringify({ status: "active", currentStep: 0 }) });
+                      toast({ title: "Bestellung bestätigt!", description: "Fortschrittsanzeige gestartet." });
+                      await loadAll();
+                      setSaving(null);
+                    }}
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" /> Bestätigen
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Active / completed orders */}
+      {!loading && orders.filter(o => o.status !== "pending").map(order => {
         const isExpanded = expandedId === order.id;
         const currentLabel = ORDER_STEPS_LABELS[order.currentStep] ?? ORDER_STEPS_LABELS[0];
+        const isRejected = order.status === "rejected";
 
         return (
-          <Card key={order.id} className="overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => isExpanded ? setExpandedId(null) : expand(order)}>
+          <Card key={order.id} className={`overflow-hidden ${isRejected ? "opacity-50 border-destructive/30" : ""}`}>
+            <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => !isRejected && (isExpanded ? setExpandedId(null) : expand(order))}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Car className="w-4 h-4 text-primary" />
@@ -204,31 +263,33 @@ function OrdersPanel({ token }: { token: string }) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Badge variant={order.currentStep === 4 ? "default" : "secondary"} className="hidden sm:flex">
-                  {currentLabel}
-                </Badge>
-                <div className="flex gap-0.5">
-                  {ORDER_STEPS_LABELS.map((_, i) => (
-                    <div key={i} className={`w-5 h-1.5 rounded-full transition-colors ${i <= order.currentStep ? "bg-primary" : "bg-border"}`} />
-                  ))}
-                </div>
+                {isRejected ? (
+                  <Badge variant="destructive" className="text-xs">Abgelehnt</Badge>
+                ) : (
+                  <>
+                    <Badge variant={order.currentStep === 4 ? "default" : "secondary"} className="hidden sm:flex">
+                      {currentLabel}
+                    </Badge>
+                    <div className="flex gap-0.5">
+                      {ORDER_STEPS_LABELS.map((_, i) => (
+                        <div key={i} className={`w-5 h-1.5 rounded-full transition-colors ${i <= order.currentStep ? "bg-primary" : "bg-border"}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            {isExpanded && (
+            {isExpanded && !isRejected && (
               <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-4 bg-muted/20">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Status / Schritt</Label>
+                    <Label className="text-xs">Schritt</Label>
                     <Select value={String(editStep[order.id] ?? order.currentStep)} onValueChange={v => setEditStep(p => ({ ...p, [order.id]: Number(v) }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {ORDER_STEPS_LABELS.map((label, i) => (
-                          <SelectItem key={i} value={String(i)}>
-                            {i}. {label}
-                          </SelectItem>
+                          <SelectItem key={i} value={String(i)}>{i}. {label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
