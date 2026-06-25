@@ -51,7 +51,7 @@ const emptyForm: VehicleFormData = {
 };
 
 function statusLabel(status: string) {
-  if (['new', 'neu'].includes(status)) return { label: 'Neu', variant: 'default' as const };
+  if (['new', 'neu', 'pending'].includes(status)) return { label: 'Neu', variant: 'default' as const };
   if (['replied', 'beantwortet'].includes(status)) return { label: 'Beantwortet', variant: 'outline' as const };
   return { label: status, variant: 'outline' as const };
 }
@@ -148,14 +148,12 @@ export default function Admin() {
         data: {
           title: form.title, brand: form.brand, model: form.model,
           year: parseInt(form.year), price: parseInt(form.price), km: parseInt(form.km),
-          fuelType: form.fuelType, transmission: form.transmission, // @ts-ignore
-          vehicleType: form.vehicleType,
+          fuelType: form.fuelType, transmission: form.transmission,
           location: form.location, description: form.description || undefined,
           color: form.color || undefined,
           power: form.power ? parseInt(form.power) : undefined,
-          doors: form.doors ? parseInt(form.doors) : undefined,
-          seats: form.seats ? parseInt(form.seats) : undefined,
-          condition: form.condition, featured: form.featured, images: uploadedImages,
+          featured: form.featured, images: uploadedImages,
+          dealerId: DEALER_ID,
         },
       });
       await queryClient.invalidateQueries();

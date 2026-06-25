@@ -52,9 +52,10 @@ router.get("/vehicles", async (req, res) => {
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid query parameters" });
     }
-    const { brand, minPrice, maxPrice, minYear, maxYear, maxKm, fuelType, dealerId, limit = 20, offset = 0 } = parsed.data;
+    const { brand, minPrice, maxPrice, minYear, maxYear, maxKm, fuelType, dealerId, limit = 20, offset = 0, q, sortBy, sortOrder } = parsed.data;
 
     const conditions = [];
+    if (q) conditions.push(sql`(${vehiclesTable.title} ilike ${'%' + q + '%'} OR ${vehiclesTable.brand} ilike ${'%' + q + '%'} OR ${vehiclesTable.model} ilike ${'%' + q + '%'})`);
     if (brand) conditions.push(ilike(vehiclesTable.brand, `%${brand}%`));
     if (minPrice != null) conditions.push(gte(vehiclesTable.price, minPrice));
     if (maxPrice != null) conditions.push(lte(vehiclesTable.price, maxPrice));
@@ -66,8 +67,14 @@ router.get("/vehicles", async (req, res) => {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
+    const sortCol = sortBy === "price" ? vehiclesTable.price
+      : sortBy === "km" ? vehiclesTable.km
+      : sortBy === "year" ? vehiclesTable.year
+      : vehiclesTable.createdAt;
+    const order = sortOrder === "asc" ? sortCol : desc(sortCol);
+
     const [vehicles, countResult] = await Promise.all([
-      db.select().from(vehiclesTable).where(where).orderBy(desc(vehiclesTable.createdAt)).limit(limit ?? 20).offset(offset ?? 0),
+      db.select().from(vehiclesTable).where(where).orderBy(order).limit(limit ?? 20).offset(offset ?? 0),
       db.select({ count: sql<number>`count(*)` }).from(vehiclesTable).where(where),
     ]);
 

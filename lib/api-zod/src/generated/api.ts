@@ -29,7 +29,10 @@ export const ListVehiclesQueryParams = zod.object({
   "fuelType": zod.coerce.string().optional(),
   "dealerId": zod.coerce.number().optional(),
   "limit": zod.coerce.number().optional(),
-  "offset": zod.coerce.number().optional()
+  "offset": zod.coerce.number().optional(),
+  "q": zod.coerce.string().optional(),
+  "sortBy": zod.coerce.string().optional(),
+  "sortOrder": zod.coerce.string().optional()
 })
 
 export const ListVehiclesResponse = zod.object({
@@ -78,7 +81,7 @@ export const CreateVehicleBody = zod.object({
   "description": zod.string().optional(),
   "images": zod.array(zod.string()).optional(),
   "featured": zod.boolean().optional(),
-  "dealerId": zod.number(),
+  "dealerId": zod.number().optional(),
   "location": zod.string().optional()
 })
 

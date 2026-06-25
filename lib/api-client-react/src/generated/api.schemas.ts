@@ -59,7 +59,7 @@ export interface VehicleInput {
   description?: string;
   images?: string[];
   featured?: boolean;
-  dealerId: number;
+  dealerId?: number;
   location?: string;
 }
 
@@ -166,6 +166,9 @@ fuelType?: string;
 dealerId?: number;
 limit?: number;
 offset?: number;
+q?: string;
+sortBy?: string;
+sortOrder?: string;
 };
 
 export type GetFeaturedVehiclesParams = {
