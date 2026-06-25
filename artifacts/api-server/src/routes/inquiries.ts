@@ -11,6 +11,9 @@ function toInquiryDTO(i: any, vehicle?: any) {
     id: i.id,
     vehicleId: i.vehicleId,
     vehicleTitle: vehicle?.title ?? null,
+    senderName: i.senderName,
+    senderEmail: i.senderEmail,
+    senderPhone: i.senderPhone ?? null,
     name: i.senderName,
     email: i.senderEmail,
     phone: i.senderPhone ?? null,
@@ -61,7 +64,7 @@ router.post("/inquiries", async (req, res) => {
       senderPhone,
       message,
       dealerId: vehicle.dealerId ?? undefined,
-      status: "pending",
+      status: "neu",
     }).returning();
 
     return res.status(201).json(toInquiryDTO(inquiry, vehicle));
