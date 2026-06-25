@@ -1372,6 +1372,37 @@ export function useGetDashboardStats<TData = Awaited<ReturnType<typeof getDashbo
 }
 
 
+/**
+ * @summary List all dealers
+ */
+export const getListDealersUrl = () => `/api/dealers`;
+
+export const listDealers = async (options?: RequestInit): Promise<Dealer[]> => {
+  return customFetch<Dealer[]>(getListDealersUrl(), options);
+};
+
+export const getListDealersQueryKey = () => [`/api/dealers`] as const;
+
+export const getListDealersQueryOptions = <TData = Awaited<ReturnType<typeof listDealers>>, TError = ErrorType<unknown>>(options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDealers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+  const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey =  queryOptions?.queryKey ?? getListDealersQueryKey();
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDealers>>> = ({ signal }) => listDealers({ signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDealers>>, TError, TData> & { queryKey: QueryKey };
+};
+
+export type ListDealersQueryResult = NonNullable<Awaited<ReturnType<typeof listDealers>>>;
+export type ListDealersQueryError = ErrorType<unknown>;
+
+export function useListDealers<TData = Awaited<ReturnType<typeof listDealers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDealers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDealersQueryOptions(options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
 
 
 

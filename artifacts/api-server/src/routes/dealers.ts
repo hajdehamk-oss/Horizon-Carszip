@@ -44,6 +44,16 @@ function toVehicleDTO(v: any, dealer?: any) {
   };
 }
 
+router.get("/dealers", async (req, res) => {
+  try {
+    const dealers = await db.select().from(dealersTable).orderBy(dealersTable.name);
+    return res.json(dealers.map(toDealerDTO));
+  } catch (err) {
+    req.log.error({ err }, "listDealers error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.get("/dealers/:id", async (req, res) => {
   try {
     const parsed = GetDealerParams.safeParse({ id: parseInt(String(req.params.id), 10) });
