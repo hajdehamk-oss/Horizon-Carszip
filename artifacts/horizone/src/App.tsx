@@ -18,6 +18,8 @@ import AdminLogin from "@/pages/admin-login";
 import HaendlerDetail from "@/pages/haendler-detail";
 import Vergleich from "@/pages/vergleich";
 import UeberUns from "@/pages/ueber-uns";
+import ClientLogin from "@/pages/client-login";
+import MeineBestellungen from "@/pages/meine-bestellungen";
 import { CompareBar } from "@/components/compare-bar";
 import { CompareProvider } from "@/contexts/compare-context";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
@@ -50,6 +52,8 @@ function Router() {
         <Route path="/ueber-uns" component={UeberUns} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminGuard} />
+        <Route path="/login" component={ClientLogin} />
+        <Route path="/meine-bestellungen" component={MeineBestellungen} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Car, Menu, X } from "lucide-react";
+import { Moon, Sun, Car, Menu, X, PackageCheck, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useClientAuth } from "@/hooks/use-client-auth";
 
-const navLinks = [
+const baseNavLinks = [
   { href: "/", label: "Startseite" },
   { href: "/fahrzeuge", label: "Fahrzeuge" },
   { href: "/ueber-uns", label: "Über Uns" },
@@ -17,6 +18,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [location] = useLocation();
+  const { isLoggedIn, user } = useClientAuth();
+
+  const navLinks = isLoggedIn
+    ? [...baseNavLinks, { href: "/meine-bestellungen", label: "Meine Bestellungen" }]
+    : baseNavLinks;
 
   return (
     <div className="min-h-screen w-full flex flex-col">
@@ -46,6 +52,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
+            {/* Client login / account button */}
+            {isLoggedIn ? (
+              <Link href="/meine-bestellungen">
+                <Button variant="ghost" size="sm" className="hidden md:flex gap-1.5 text-xs">
+                  <PackageCheck className="h-4 w-4" />
+                  {user?.name?.split(" ")[0]}
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="hidden md:flex gap-1.5 text-xs">
+                  <LogIn className="h-4 w-4" />
+                  Kundenlogin
+                </Button>
+              </Link>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
@@ -86,6 +109,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {label}
                 </Link>
               ))}
+              {!isLoggedIn && (
+                <Link href="/login" onClick={() => setMenuOpen(false)}
+                  className="px-3 py-3 rounded-md text-base font-medium text-foreground/80 hover:bg-muted hover:text-primary flex items-center gap-2">
+                  <LogIn className="h-4 w-4" /> Kundenlogin
+                </Link>
+              )}
             </nav>
           </div>
         )}

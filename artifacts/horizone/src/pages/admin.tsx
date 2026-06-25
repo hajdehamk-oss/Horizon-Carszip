@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   useGetAdminStats, useGetPlatformStats, useListVehicles,
   useCreateVehicle, useGetDashboardStats, useListInquiries, useUpdateInquiry
@@ -23,6 +23,243 @@ import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+
+// ── Orders Panel ──────────────────────────────────────────────────────────────
+
+const ORDER_STEPS_LABELS = [
+  "Bestellung eingegangen",
+  "Wird bearbeitet",
+  "Unterwegs",
+  "Im Hafen",
+  "Zugestellt",
+];
+
+interface AdminOrder {
+  id: number; currentStep: number; notes: string | null;
+  createdAt: string; updatedAt: string;
+  vehicleId: number; vehicleTitle: string; vehicleBrand: string;
+  vehicleModel: string; vehicleYear: number;
+  userId: number; userName: string; userEmail: string; userPhone: string | null;
+}
+
+interface AdminClient { id: number; name: string; email: string; phone: string | null; }
+interface AdminVehicle { id: number; title: string; brand: string; model: string; year: number; }
+
+function OrdersPanel({ token }: { token: string }) {
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [clients, setClients] = useState<AdminClient[]>([]);
+  const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editStep, setEditStep] = useState<Record<number, number>>({});
+  const [editNotes, setEditNotes] = useState<Record<number, string>>({});
+  const [saving, setSaving] = useState<number | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newVehicleId, setNewVehicleId] = useState("");
+  const [newUserId, setNewUserId] = useState("");
+  const [newNotes, setNewNotes] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+  async function loadAll() {
+    setLoading(true);
+    try {
+      const [oRes, cRes, vRes] = await Promise.all([
+        fetch("/api/orders", { headers: authHeaders }),
+        fetch("/api/clients", { headers: authHeaders }),
+        fetch("/api/vehicles?limit=100", { headers: authHeaders }),
+      ]);
+      const [o, c, v] = await Promise.all([oRes.json(), cRes.json(), vRes.json()]);
+      setOrders(Array.isArray(o) ? o : []);
+      setClients(Array.isArray(c) ? c : []);
+      setVehicles(Array.isArray(v?.vehicles ?? v) ? (v?.vehicles ?? v) : []);
+    } finally { setLoading(false); }
+  }
+
+  useEffect(() => { loadAll(); }, []);
+
+  async function handleSave(id: number) {
+    setSaving(id);
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: "PATCH",
+        headers: authHeaders,
+        body: JSON.stringify({ currentStep: editStep[id], notes: editNotes[id] ?? "" }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Bestellung aktualisiert" });
+      await loadAll();
+      setExpandedId(null);
+    } catch { toast({ title: "Fehler beim Speichern", variant: "destructive" }); }
+    finally { setSaving(null); }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Bestellung wirklich löschen?")) return;
+    await fetch(`/api/orders/${id}`, { method: "DELETE", headers: authHeaders });
+    toast({ title: "Bestellung gelöscht" });
+    await loadAll();
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ vehicleId: Number(newVehicleId), userId: Number(newUserId), notes: newNotes || null }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      toast({ title: "Bestellung erstellt" });
+      setShowCreate(false); setNewVehicleId(""); setNewUserId(""); setNewNotes("");
+      await loadAll();
+    } catch (err) { toast({ title: String(err), variant: "destructive" }); }
+    finally { setCreating(false); }
+  }
+
+  function expand(order: AdminOrder) {
+    setExpandedId(order.id);
+    setEditStep(p => ({ ...p, [order.id]: order.currentStep }));
+    setEditNotes(p => ({ ...p, [order.id]: order.notes ?? "" }));
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Kundenbestellungen</h2>
+          <p className="text-sm text-muted-foreground">Verwalten Sie den Lieferstatus für jeden Kunden</p>
+        </div>
+        <Button size="sm" className="gap-2" onClick={() => setShowCreate(v => !v)}>
+          <Plus className="w-4 h-4" /> Neue Bestellung
+        </Button>
+      </div>
+
+      {showCreate && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Neue Bestellung erstellen</CardTitle></CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label>Fahrzeug</Label>
+                <Select value={newVehicleId} onValueChange={setNewVehicleId} required>
+                  <SelectTrigger><SelectValue placeholder="Fahrzeug wählen…" /></SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map(v => <SelectItem key={v.id} value={String(v.id)}>{v.title ?? `${v.brand} ${v.model} ${v.year}`}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Kunde</Label>
+                <Select value={newUserId} onValueChange={setNewUserId} required>
+                  <SelectTrigger><SelectValue placeholder="Kunde wählen…" /></SelectTrigger>
+                  <SelectContent>
+                    {clients.length === 0 && <SelectItem value="none" disabled>Noch keine Kunden registriert</SelectItem>}
+                    {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name} ({c.email})</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Notiz (optional)</Label>
+                <Input placeholder="z.B. Abholung am Dienstag" value={newNotes} onChange={e => setNewNotes(e.target.value)} />
+              </div>
+              <div className="md:col-span-3 flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Abbrechen</Button>
+                <Button type="submit" disabled={creating || !newVehicleId || !newUserId}>
+                  {creating ? "Erstelle…" : "Bestellung erstellen"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {loading && <div className="py-8 text-center text-muted-foreground text-sm">Lade Bestellungen…</div>}
+
+      {!loading && orders.length === 0 && (
+        <div className="py-12 text-center text-muted-foreground">
+          <Car className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>Noch keine Bestellungen vorhanden.</p>
+          <p className="text-sm mt-1">Kunden müssen sich zuerst registrieren.</p>
+        </div>
+      )}
+
+      {!loading && orders.map(order => {
+        const isExpanded = expandedId === order.id;
+        const currentLabel = ORDER_STEPS_LABELS[order.currentStep] ?? ORDER_STEPS_LABELS[0];
+
+        return (
+          <Card key={order.id} className="overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => isExpanded ? setExpandedId(null) : expand(order)}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Car className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{order.vehicleTitle ?? `${order.vehicleBrand} ${order.vehicleModel}`}</p>
+                  <p className="text-xs text-muted-foreground">{order.userName} · {order.userEmail}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant={order.currentStep === 4 ? "default" : "secondary"} className="hidden sm:flex">
+                  {currentLabel}
+                </Badge>
+                <div className="flex gap-0.5">
+                  {ORDER_STEPS_LABELS.map((_, i) => (
+                    <div key={i} className={`w-5 h-1.5 rounded-full transition-colors ${i <= order.currentStep ? "bg-primary" : "bg-border"}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {isExpanded && (
+              <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-4 bg-muted/20">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Status / Schritt</Label>
+                    <Select value={String(editStep[order.id] ?? order.currentStep)} onValueChange={v => setEditStep(p => ({ ...p, [order.id]: Number(v) }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORDER_STEPS_LABELS.map((label, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {i}. {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Notiz für den Kunden</Label>
+                    <Input
+                      placeholder="z.B. Fahrzeug trifft voraussichtlich am 5. Juli ein"
+                      value={editNotes[order.id] ?? ""}
+                      onChange={e => setEditNotes(p => ({ ...p, [order.id]: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 justify-end">
+                  <Button size="sm" variant="ghost" className="text-destructive gap-1.5" onClick={() => handleDelete(order.id)}>
+                    <Trash2 className="w-3.5 h-3.5" /> Löschen
+                  </Button>
+                  <Button size="sm" onClick={() => handleSave(order.id)} disabled={saving === order.id}>
+                    {saving === order.id ? "Speichert…" : "Speichern"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── End Orders Panel ──────────────────────────────────────────────────────────
 
 const chartData = [
   { name: "Jan", revenue: 0 },
@@ -238,6 +475,7 @@ export default function Admin() {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="bestellungen" className="whitespace-nowrap">Bestellungen</TabsTrigger>
           </TabsList>
         </div>
 
@@ -758,6 +996,11 @@ export default function Admin() {
               })()}
             </div>
           </div>
+        </TabsContent>
+
+        {/* ── Bestellungen ── */}
+        <TabsContent value="bestellungen">
+          <OrdersPanel token={token ?? ""} />
         </TabsContent>
 
         {/* ── Approvals ── */}

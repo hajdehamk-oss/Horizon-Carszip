@@ -59,9 +59,33 @@ export const inquiriesTable = pgTable("inquiries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const usersTable = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  avatar: text("avatar"),
+  role: text("role").notNull().default("user"),
+  city: text("city"),
+  passwordHash: text("password_hash"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const ordersTable = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  vehicleId: integer("vehicle_id").notNull().references(() => vehiclesTable.id),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  currentStep: integer("current_step").notNull().default(0),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertDealerSchema = createInsertSchema(dealersTable).omit({ id: true, createdAt: true });
 export const insertVehicleSchema = createInsertSchema(vehiclesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInquirySchema = createInsertSchema(inquiriesTable).omit({ id: true, createdAt: true, status: true });
+export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, role: true });
+export const insertOrderSchema = createInsertSchema(ordersTable).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type Dealer = typeof dealersTable.$inferSelect;
 export type InsertDealer = z.infer<typeof insertDealerSchema>;
@@ -69,3 +93,7 @@ export type Vehicle = typeof vehiclesTable.$inferSelect;
 export type InsertVehicle = z.infer<typeof insertVehicleSchema>;
 export type Inquiry = typeof inquiriesTable.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+export type User = typeof usersTable.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Order = typeof ordersTable.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
