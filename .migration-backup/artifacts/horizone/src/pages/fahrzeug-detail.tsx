@@ -1,16 +1,38 @@
 import { useParams } from "wouter";
-import { useGetVehicle, useGetSimilarVehicles, getGetVehicleQueryKey, getGetSimilarVehiclesQueryKey } from "@workspace/api-client-react";
+import {
+  useGetVehicle,
+  useGetSimilarVehicles,
+  getGetVehicleQueryKey,
+  getGetSimilarVehiclesQueryKey,
+} from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Gauge, Fuel, Car, MapPin, Share2, Heart, ShieldCheck, Check, Phone } from "lucide-react";
+import {
+  Calendar,
+  Gauge,
+  Fuel,
+  Car,
+  MapPin,
+  Share2,
+  Heart,
+  ShieldCheck,
+  Check,
+  Phone,
+  ArrowRightLeft,
+  Maximize2,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { ContactDialog } from "@/components/contact-dialog";
 import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCompare } from "@/hooks/use-compare";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,13 +42,17 @@ export default function FahrzeugDetail() {
   const { toast } = useToast();
 
   const { data: vehicle, isLoading } = useGetVehicle(vehicleId, {
-    query: { enabled: !!vehicleId, queryKey: getGetVehicleQueryKey(vehicleId) }
+    query: { enabled: !!vehicleId, queryKey: getGetVehicleQueryKey(vehicleId) },
   });
   const { data: similarVehicles } = useGetSimilarVehicles(vehicleId, {
-    query: { enabled: !!vehicleId, queryKey: getGetSimilarVehiclesQueryKey(vehicleId) }
+    query: {
+      enabled: !!vehicleId,
+      queryKey: getGetSimilarVehiclesQueryKey(vehicleId),
+    },
   });
 
   const { isFavorited, toggleFavorite } = useFavorites();
+  const { isInCompare, toggleCompare, isFull } = useCompare();
   const [anzahlung, setAnzahlung] = useState(5000);
   const [laufzeit, setLaufzeit] = useState(48);
   const [copied, setCopied] = useState(false);
@@ -34,6 +60,7 @@ export default function FahrzeugDetail() {
   const [phoneVisible, setPhoneVisible] = useState(false);
   const [phoneContactOpen, setPhoneContactOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const images = vehicle?.images ?? [];
@@ -42,13 +69,15 @@ export default function FahrzeugDetail() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (images.length <= 1) return;
     intervalRef.current = setInterval(() => {
-      setCurrentImageIndex(prev => (prev + 1) % images.length);
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 5000);
   }, [images.length]);
 
   useEffect(() => {
     startSlideshow();
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [startSlideshow]);
 
   function goToImage(index: number) {
@@ -60,7 +89,11 @@ export default function FahrzeugDetail() {
     const url = window.location.href;
     const title = vehicle?.title ?? "Fahrzeug";
     if (navigator.share) {
-      try { await navigator.share({ title, url }); } catch { /* cancelled */ }
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        /* cancelled */
+      }
     } else {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -83,11 +116,18 @@ export default function FahrzeugDetail() {
   }
 
   if (!vehicle) {
-    return <div className="container py-24 text-center text-xl">Fahrzeug nicht gefunden.</div>;
+    return (
+      <div className="container py-24 text-center text-xl">
+        Fahrzeug nicht gefunden.
+      </div>
+    );
   }
 
   const favorited = isFavorited(vehicle.id);
-  const rate = Math.max(0, Math.round((vehicle.price - anzahlung) / laufzeit * 1.05));
+  const rate = Math.max(
+    0,
+    Math.round(((vehicle.price - anzahlung) / laufzeit) * 1.05),
+  );
 
   return (
     <div className="container py-8">
@@ -97,12 +137,16 @@ export default function FahrzeugDetail() {
         onClose={() => setContactOpen(false)}
         vehicleTitle={vehicle.title}
         vehicleLocation={vehicle.location}
+        vehicleId={vehicle.id}
+        dealerId={vehicle.dealerId}
       />
       <ContactDialog
         open={phoneContactOpen}
         onClose={() => setPhoneContactOpen(false)}
         vehicleTitle={vehicle.title}
         vehicleLocation={vehicle.location}
+        vehicleId={vehicle.id}
+        dealerId={vehicle.dealerId}
       />
 
       {/* Image Gallery — auto-advancing slideshow */}
@@ -115,28 +159,62 @@ export default function FahrzeugDetail() {
               alt={`${vehicle.title} – Bild ${i + 1}`}
               className={cn(
                 "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
-                i === currentImageIndex ? "opacity-100" : "opacity-0"
+                i === currentImageIndex ? "opacity-100" : "opacity-0",
               )}
             />
           ))}
           {images.length === 0 && (
-            <img src="/car-placeholder.png" alt={vehicle.title} className="w-full h-full object-cover" />
+            <img
+              src="/car-placeholder.png"
+              alt={vehicle.title}
+              className="w-full h-full object-cover"
+            />
           )}
 
           {/* Prev / Next arrows */}
           {images.length > 1 && (
             <>
               <button
-                onClick={() => goToImage((currentImageIndex - 1 + images.length) % images.length)}
+                onClick={() =>
+                  goToImage(
+                    (currentImageIndex - 1 + images.length) % images.length,
+                  )
+                }
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/90"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
               </button>
               <button
-                onClick={() => goToImage((currentImageIndex + 1) % images.length)}
+                onClick={() =>
+                  goToImage((currentImageIndex + 1) % images.length)
+                }
                 className="absolute right-14 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-background/70 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/90"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
               </button>
             </>
           )}
@@ -152,9 +230,9 @@ export default function FahrzeugDetail() {
                     "rounded-full transition-all",
                     i === currentImageIndex
                       ? "w-6 h-2 bg-white"
-                      : "w-2 h-2 bg-white/50 hover:bg-white/80"
+                      : "w-2 h-2 bg-white/50 hover:bg-white/80",
                   )}
-                />zz
+                />
               ))}
             </div>
           )}
@@ -167,17 +245,80 @@ export default function FahrzeugDetail() {
           )}
 
           {/* Action buttons */}
-          <div className="absolute top-4 right-4 flex gap-2">
-            <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
-              onClick={handleShare} title="Teilen">
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+          <div className="absolute top-4 right-4 flex gap-2 z-10">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="rounded-full bg-background/80 backdrop-blur"
+              onClick={() => setLightboxOpen(true)}
+              title="Vollbild"
+            >
+              <Maximize2 className="w-4 h-4" />
             </Button>
-            <Button size="icon" variant="secondary" className="rounded-full bg-background/80 backdrop-blur"
+            <Button
+              size="icon"
+              variant="secondary"
+              className="rounded-full bg-background/80 backdrop-blur"
+              onClick={handleShare}
+              title="Teilen"
+            >
+              {copied ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <Share2 className="w-4 h-4" />
+              )}
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="rounded-full bg-background/80 backdrop-blur"
               onClick={() => toggleFavorite(vehicle.id)}
-              title={favorited ? "Von Merkliste entfernen" : "Zur Merkliste hinzufügen"}>
-              <Heart className={cn("w-4 h-4 transition-colors", favorited ? "fill-primary text-primary" : "")} />
+              title={
+                favorited
+                  ? "Von Merkliste entfernen"
+                  : "Zur Merkliste hinzufügen"
+              }
+            >
+              <Heart
+                className={cn(
+                  "w-4 h-4 transition-colors",
+                  favorited ? "fill-primary text-primary" : "",
+                )}
+              />
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className={cn(
+                "rounded-full bg-background/80 backdrop-blur",
+                isInCompare(vehicle.id) && "ring-2 ring-primary",
+              )}
+              onClick={() => {
+                if (!isFull || isInCompare(vehicle.id))
+                  toggleCompare(vehicle.id);
+              }}
+              title={
+                isInCompare(vehicle.id)
+                  ? "Aus Vergleich entfernen"
+                  : isFull
+                    ? "Vergleich ist voll"
+                    : "Zum Vergleich hinzufügen"
+              }
+            >
+              <ArrowRightLeft
+                className={cn(
+                  "w-4 h-4 transition-colors",
+                  isInCompare(vehicle.id) ? "text-primary" : "",
+                )}
+              />
             </Button>
           </div>
+
+          {/* Click anywhere on image to open lightbox */}
+          <div
+            className="absolute inset-0 cursor-zoom-in"
+            onClick={() => setLightboxOpen(true)}
+          />
         </div>
 
         {/* Thumbnail strip */}
@@ -191,15 +332,103 @@ export default function FahrzeugDetail() {
                   "flex-shrink-0 w-20 h-14 md:w-28 md:h-18 rounded-lg overflow-hidden border-2 transition-all",
                   i === currentImageIndex
                     ? "border-primary opacity-100 scale-105"
-                    : "border-transparent opacity-60 hover:opacity-90"
+                    : "border-transparent opacity-60 hover:opacity-90",
                 )}
               >
-                <img src={src} alt={`Vorschau ${i + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={src}
+                  alt={`Vorschau ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* Lightbox overlay */}
+      {lightboxOpen && images.length > 0 && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium">
+            {currentImageIndex + 1} / {images.length}
+          </div>
+
+          {/* Prev */}
+          {images.length > 1 && (
+            <button
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToImage(
+                  (currentImageIndex - 1 + images.length) % images.length,
+                );
+              }}
+            >
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </button>
+          )}
+
+          {/* Full image — object-contain so nothing is cropped */}
+          <img
+            src={images[currentImageIndex]}
+            alt={`${vehicle.title} – Bild ${currentImageIndex + 1}`}
+            className="max-w-full max-h-full w-full h-full object-contain select-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Next */}
+          {images.length > 1 && (
+            <button
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToImage((currentImageIndex + 1) % images.length);
+              }}
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </button>
+          )}
+
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-4 overflow-x-auto max-w-full">
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToImage(i);
+                  }}
+                  className={cn(
+                    "flex-shrink-0 w-14 h-10 rounded-md overflow-hidden border-2 transition-all",
+                    i === currentImageIndex
+                      ? "border-white opacity-100"
+                      : "border-transparent opacity-40 hover:opacity-70",
+                  )}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
@@ -207,48 +436,78 @@ export default function FahrzeugDetail() {
           <div>
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">{vehicle.title}</h1>
-                <p className="text-xl text-muted-foreground">{vehicle.brand} {vehicle.model}</p>
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">
+                  {vehicle.title}
+                </h1>
+                <p className="text-xl text-muted-foreground">
+                  {vehicle.brand} {vehicle.model}
+                </p>
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-primary">
-                  {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(vehicle.price)}
+                  {new Intl.NumberFormat("de-CH", {
+                    style: "currency",
+                    currency: "CHF",
+                    maximumFractionDigits: 0,
+                  }).format(vehicle.price)}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-4 mt-6">
-              <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="text-sm px-3 py-1 flex items-center gap-2"
+              >
                 <Calendar className="w-4 h-4" /> {vehicle.year}
               </Badge>
-              <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
-                <Gauge className="w-4 h-4" /> {new Intl.NumberFormat("de-CH").format(vehicle.km)} km
+              <Badge
+                variant="outline"
+                className="text-sm px-3 py-1 flex items-center gap-2"
+              >
+                <Gauge className="w-4 h-4" />{" "}
+                {new Intl.NumberFormat("de-CH").format(vehicle.km)} km
               </Badge>
-              <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="text-sm px-3 py-1 flex items-center gap-2"
+              >
                 <Fuel className="w-4 h-4" /> {vehicle.fuelType}
               </Badge>
-              <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="text-sm px-3 py-1 flex items-center gap-2"
+              >
                 <Car className="w-4 h-4" /> {vehicle.transmission}
               </Badge>
-              <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="text-sm px-3 py-1 flex items-center gap-2"
+              >
                 <MapPin className="w-4 h-4" /> {vehicle.location}
               </Badge>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold border-b border-border/50 pb-2">Beschreibung</h2>
+            <h2 className="text-2xl font-bold border-b border-border/50 pb-2">
+              Beschreibung
+            </h2>
             <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
               {vehicle.description || "Keine Beschreibung verfügbar."}
             </p>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold border-b border-border/50 pb-2">Technische Daten</h2>
+            <h2 className="text-2xl font-bold border-b border-border/50 pb-2">
+              Technische Daten
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Leistung</div>
-                <div className="font-medium">{vehicle.power ? `${vehicle.power} PS` : "k.A."}</div>
+                <div className="font-medium">
+                  {vehicle.power ? `${vehicle.power} PS` : "k.A."}
+                </div>
               </div>
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Karosserie</div>
@@ -269,7 +528,11 @@ export default function FahrzeugDetail() {
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Zustand</div>
                 <div className="font-medium">
-                  {vehicle.condition === 'used' ? 'Gebraucht' : vehicle.condition === 'new' ? 'Neu' : 'Klassiker'}
+                  {vehicle.condition === "used"
+                    ? "Gebraucht"
+                    : vehicle.condition === "new"
+                      ? "Neu"
+                      : "Klassiker"}
                 </div>
               </div>
             </div>
@@ -285,11 +548,14 @@ export default function FahrzeugDetail() {
                 Händler kontaktieren
               </h3>
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Geprüfter Händler aus {vehicle.location}.</p>
+                <p className="text-sm text-muted-foreground">
+                  Geprüfter Händler aus {vehicle.location}.
+                </p>
                 {vehicle.dealerId && (
                   <Link href={`/haendler/${vehicle.dealerId}`}>
                     <button className="w-full text-sm text-primary hover:underline text-left flex items-center gap-1.5 py-1">
-                      <Car className="w-3.5 h-3.5" /> Alle Fahrzeuge dieses Händlers ansehen →
+                      <Car className="w-3.5 h-3.5" /> Alle Fahrzeuge dieses
+                      Händlers ansehen →
                     </button>
                   </Link>
                 )}
@@ -312,7 +578,9 @@ export default function FahrzeugDetail() {
                   }}
                 >
                   <Phone className="w-4 h-4" />
-                  {phoneVisible ? "+41 44 456 789 00" : "Telefonnummer anzeigen"}
+                  {phoneVisible
+                    ? "+41 44 456 789 00"
+                    : "Telefonnummer anzeigen"}
                 </Button>
                 {phoneVisible && (
                   <p className="text-xs text-muted-foreground text-center">
@@ -331,7 +599,11 @@ export default function FahrzeugDetail() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Kaufpreis</span>
                     <span className="font-bold">
-                      {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(vehicle.price)}
+                      {new Intl.NumberFormat("de-CH", {
+                        style: "currency",
+                        currency: "CHF",
+                        maximumFractionDigits: 0,
+                      }).format(vehicle.price)}
                     </span>
                   </div>
                 </div>
@@ -340,26 +612,48 @@ export default function FahrzeugDetail() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Anzahlung</span>
                     <span className="font-bold">
-                      {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(anzahlung)}
+                      {new Intl.NumberFormat("de-CH", {
+                        style: "currency",
+                        currency: "CHF",
+                        maximumFractionDigits: 0,
+                      }).format(anzahlung)}
                     </span>
                   </div>
-                  <Slider value={[anzahlung]} min={0} max={Math.floor(vehicle.price * 0.8)} step={500}
-                    onValueChange={(v) => setAnzahlung(v[0])} />
+                  <Slider
+                    value={[anzahlung]}
+                    min={0}
+                    max={Math.floor(vehicle.price * 0.8)}
+                    step={500}
+                    onValueChange={(v) => setAnzahlung(v[0])}
+                  />
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Laufzeit (Monate)</span>
+                    <span className="text-muted-foreground">
+                      Laufzeit (Monate)
+                    </span>
                     <span className="font-bold">{laufzeit}</span>
                   </div>
-                  <Slider value={[laufzeit]} min={12} max={84} step={12}
-                    onValueChange={(v) => setLaufzeit(v[0])} />
+                  <Slider
+                    value={[laufzeit]}
+                    min={12}
+                    max={84}
+                    step={12}
+                    onValueChange={(v) => setLaufzeit(v[0])}
+                  />
                 </div>
 
                 <div className="pt-4 border-t border-border flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Monatliche Rate ab*</span>
+                  <span className="text-sm text-muted-foreground">
+                    Monatliche Rate ab*
+                  </span>
                   <span className="text-2xl font-bold text-primary">
-                    {new Intl.NumberFormat("de-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(rate)}
+                    {new Intl.NumberFormat("de-CH", {
+                      style: "currency",
+                      currency: "CHF",
+                      maximumFractionDigits: 0,
+                    }).format(rate)}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground text-center">
@@ -376,7 +670,7 @@ export default function FahrzeugDetail() {
         <div className="mt-16">
           <h2 className="text-2xl font-bold mb-6">Ähnliche Fahrzeuge</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {similarVehicles.slice(0, 4).map(v => (
+            {similarVehicles.slice(0, 4).map((v) => (
               <VehicleCard key={v.id} vehicle={v} />
             ))}
           </div>

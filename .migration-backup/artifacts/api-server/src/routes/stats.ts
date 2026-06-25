@@ -112,12 +112,12 @@ router.get("/stats/admin", async (req, res) => {
     const dealerCount = dealers[0]?.count ?? 0;
 
     res.json({
-      totalRevenue: dealerCount * 299,
-      newUsersThisMonth: newUsers[0]?.count ?? 0,
-      newVehiclesThisMonth: newVehicles[0]?.count ?? 0,
-      pendingApprovals: 3,
-      totalDealerSubscriptions: dealerCount,
-      activeVehicles: vehicles[0]?.count ?? 0,
+      totalRevenue: 0,
+      newUsersThisMonth: 0,
+      newVehiclesThisMonth: 0,
+      pendingApprovals: 0,
+      totalDealerSubscriptions: 0,
+      activeVehicles: 0,
     });
   } catch (err) {
     req.log.error({ err }, "getAdminStats error");

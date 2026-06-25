@@ -1,4 +1,5 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useEffect, useState } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,10 @@ import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import AdminLogin from "@/pages/admin-login";
 import HaendlerDetail from "@/pages/haendler-detail";
+import Vergleich from "@/pages/vergleich";
+import UeberUns from "@/pages/ueber-uns";
+import { CompareBar } from "@/components/compare-bar";
+import { CompareProvider } from "@/contexts/compare-context";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { Redirect } from "wouter";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
@@ -41,6 +46,8 @@ function Router() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/profil" component={Dashboard} />
         <Route path="/haendler/:id" component={HaendlerDetail} />
+        <Route path="/vergleich" component={Vergleich} />
+        <Route path="/ueber-uns" component={UeberUns} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminGuard} />
         <Route component={NotFound} />
@@ -49,18 +56,31 @@ function Router() {
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 function AppContent() {
   const { loaded, hasName, updateProfile } = useVisitorProfile();
+  const [location] = useLocation();
+  const [dismissed, setDismissed] = useState(false);
+
+  const isProfilePage = location === "/dashboard" || location === "/profil" || location.startsWith("/admin");
 
   return (
     <>
-      {loaded && !hasName && (
+      <ScrollToTop />
+      {loaded && !hasName && !isProfilePage && !dismissed && (
         <VisitorNameDialog
           open={true}
-          onSave={(name) => updateProfile({ name })}
+          onSave={(name) => { updateProfile({ name }); setDismissed(false); }}
+          onSkip={() => setDismissed(true)}
         />
       )}
       <Router />
+      <CompareBar />
     </>
   );
 }
@@ -70,10 +90,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" storageKey="horizone-theme">
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <AppContent />
-          </WouterRouter>
-          <Toaster />
+          <CompareProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AppContent />
+            </WouterRouter>
+            <Toaster />
+          </CompareProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

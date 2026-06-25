@@ -4,52 +4,78 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, MessageSquare } from "lucide-react";
+import { Check, MessageSquare, Loader2 } from "lucide-react";
 import { useVisitorProfile } from "@/hooks/use-visitor-profile";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateInquiry } from "@workspace/api-client-react";
 
 interface ContactDialogProps {
   open: boolean;
   onClose: () => void;
   vehicleTitle: string;
   vehicleLocation: string;
+  vehicleId: number;
+  dealerId?: number | null;
 }
 
-export function ContactDialog({ open, onClose, vehicleTitle, vehicleLocation }: ContactDialogProps) {
+export function ContactDialog({ open, onClose, vehicleTitle, vehicleLocation, vehicleId, dealerId }: ContactDialogProps) {
   const { profile, loaded, updateProfile } = useVisitorProfile();
   const { toast } = useToast();
+  const { mutateAsync: createInquiry, isPending } = useCreateInquiry();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     if (loaded && open) {
       setName(profile?.name || "");
       setEmail(profile?.email || "");
       setPhone(profile?.phone || "");
-    }
-  }, [loaded, open, profile]);
-  const [message, setMessage] = useState(
-    `Guten Tag,\n\nIch interessiere mich für Ihr Inserat "${vehicleTitle}". Bitte kontaktieren Sie mich für weitere Informationen.`
-  );
-  const [sent, setSent] = useState(false);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email && !phone) return;
-    updateProfile({ name, email, phone });
-    setSent(true);
-    toast({
-      title: "Nachricht gesendet ✓",
-      description: `Der Händler aus ${vehicleLocation} meldet sich bald bei Ihnen.`,
-    });
-    setTimeout(() => {
+      setMessage(`Guten Tag,\n\nIch interessiere mich für Ihr Inserat „${vehicleTitle}". Bitte kontaktieren Sie mich für weitere Informationen.`);
       setSent(false);
-      onClose();
-    }, 2000);
+    }
+  }, [loaded, open, profile, vehicleTitle]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) return;
+
+    try {
+      await createInquiry({
+        data: {
+          vehicleId,
+          dealerId: dealerId ?? undefined,
+          senderName: name.trim(),
+          senderEmail: email.trim(),
+          senderPhone: phone.trim() || undefined,
+          message: message.trim(),
+          status: "neu",
+        },
+      });
+
+      updateProfile({ name, email, phone });
+      setSent(true);
+      toast({
+        title: "Nachricht gesendet ✓",
+        description: `Der Händler aus ${vehicleLocation} meldet sich bald bei Ihnen.`,
+      });
+      setTimeout(() => {
+        setSent(false);
+        onClose();
+      }, 2000);
+    } catch {
+      toast({
+        title: "Fehler beim Senden",
+        description: "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
   }
 
-  const canSubmit = name.trim() && (email.trim() || phone.trim()) && message.trim();
+  const canSubmit = name.trim() && email.trim() && message.trim();
 
   if (sent) {
     return (
@@ -92,13 +118,14 @@ export function ContactDialog({ open, onClose, vehicleTitle, vehicleLocation }: 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="contact-email">E-Mail</Label>
+              <Label htmlFor="contact-email">E-Mail *</Label>
               <Input
                 id="contact-email"
                 type="email"
                 placeholder="luca@example.ch"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="space-y-1.5">
@@ -112,7 +139,6 @@ export function ContactDialog({ open, onClose, vehicleTitle, vehicleLocation }: 
               />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground -mt-1">* E-Mail oder Telefon ist erforderlich</p>
           <div className="space-y-1.5">
             <Label htmlFor="contact-message">Nachricht *</Label>
             <Textarea
@@ -130,8 +156,9 @@ export function ContactDialog({ open, onClose, vehicleTitle, vehicleLocation }: 
             <Button
               type="submit"
               className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold"
-              disabled={!canSubmit}
+              disabled={!canSubmit || isPending}
             >
+              {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Nachricht senden
             </Button>
           </div>

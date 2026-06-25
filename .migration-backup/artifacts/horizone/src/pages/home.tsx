@@ -1,18 +1,30 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetFeaturedVehicles, useGetRecentVehicles } from "@workspace/api-client-react";
-import heroCarUrl from "@/assets/hero-car.png";
+import {
+  useGetFeaturedVehicles,
+  useGetRecentVehicles,
+} from "@workspace/api-client-react";
+import heroCarUrl from "@/assets/hero-car.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, ShieldCheck, Zap, Star, ArrowRight } from "lucide-react";
 import { VehicleCard } from "@/components/vehicle-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const { data: featured, isLoading: isLoadingFeatured } = useGetFeaturedVehicles({ limit: 6 });
-  const { data: recent, isLoading: isLoadingRecent } = useGetRecentVehicles({ limit: 6 });
+  const { data: featured, isLoading: isLoadingFeatured } =
+    useGetFeaturedVehicles({ limit: 6 });
+  const { data: recent, isLoading: isLoadingRecent } = useGetRecentVehicles({
+    limit: 6,
+  });
 
   const [brand, setBrand] = useState("");
   const [minYear, setMinYear] = useState("");
@@ -45,11 +57,13 @@ export default function Home() {
             <Star className="h-3.5 w-3.5" /> Der Schweizer Premium Automarkt
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-white drop-shadow-lg max-w-4xl">
-            Ihr nächstes<br />
+            Ihr nächstes
+            <br />
             <span className="text-primary">Traumfahrzeug</span>
           </h1>
           <p className="text-base md:text-xl text-gray-300 max-w-lg drop-shadow">
-            Finden, vergleichen und kaufen Sie Ihr nächstes Fahrzeug sicher und transparent.
+            Finden, vergleichen und kaufen Sie Ihr nächstes Fahrzeug sicher und
+            transparent.
           </p>
 
           {/* Search box */}
@@ -75,14 +89,14 @@ export default function Home() {
                 placeholder="Baujahr ab"
                 className="bg-background/70 h-11"
                 value={minYear}
-                onChange={e => setMinYear(e.target.value)}
+                onChange={(e) => setMinYear(e.target.value)}
               />
               <Input
                 type="number"
-                placeholder="Preis bis (€)"
+                placeholder="Preis bis (CHF)"
                 className="bg-background/70 h-11"
                 value={maxPrice}
-                onChange={e => setMaxPrice(e.target.value)}
+                onChange={(e) => setMaxPrice(e.target.value)}
               />
             </div>
             <Button
@@ -104,17 +118,23 @@ export default function Home() {
             <div className="flex flex-col items-center gap-2">
               <ShieldCheck className="h-8 w-8 text-primary" />
               <p className="font-bold text-sm">Geprüfte Händler</p>
-              <p className="text-xs text-muted-foreground">Alle Partner sind verifiziert</p>
+              <p className="text-xs text-muted-foreground">
+                Alle Partner sind verifiziert
+              </p>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Zap className="h-8 w-8 text-primary" />
               <p className="font-bold text-sm">Schnelle Abwicklung</p>
-              <p className="text-xs text-muted-foreground">Direktkontakt zum Verkäufer</p>
+              <p className="text-xs text-muted-foreground">
+                Direktkontakt zum Verkäufer
+              </p>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Star className="h-8 w-8 text-primary" />
               <p className="font-bold text-sm">Premium Auswahl</p>
-              <p className="text-xs text-muted-foreground">Exklusive Fahrzeuge aller Klassen</p>
+              <p className="text-xs text-muted-foreground">
+                Exklusive Fahrzeuge aller Klassen
+              </p>
             </div>
           </div>
         </div>
@@ -123,32 +143,43 @@ export default function Home() {
       {/* Featured */}
       <section className="py-12 md:py-20 container px-4">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Top Inserate</h2>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Top Inserate
+          </h2>
           <Link href="/fahrzeuge">
-            <Button variant="ghost" className="text-primary gap-1 hidden sm:flex">
+            <Button
+              variant="ghost"
+              className="text-primary gap-1 hidden sm:flex"
+            >
               Alle anzeigen <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
         {isLoadingFeatured ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-80 w-full rounded-xl" />)}
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-80 w-full rounded-xl" />
+            ))}
           </div>
         ) : featured && featured.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featured.map(vehicle => (
+              {featured.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} />
               ))}
             </div>
             <div className="mt-8 text-center sm:hidden">
               <Link href="/fahrzeuge">
-                <Button variant="outline" className="gap-2">Alle anzeigen <ArrowRight className="h-4 w-4" /></Button>
+                <Button variant="outline" className="gap-2">
+                  Alle anzeigen <ArrowRight className="h-4 w-4" />
+                </Button>
               </Link>
             </div>
           </>
         ) : (
-          <div className="text-center text-muted-foreground py-12">Keine Top Inserate gefunden.</div>
+          <div className="text-center text-muted-foreground py-12">
+            Keine Top Inserate gefunden.
+          </div>
         )}
       </section>
 
@@ -156,32 +187,43 @@ export default function Home() {
       <section className="py-12 md:py-20 bg-card/40 border-t border-border/30">
         <div className="container px-4">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Neueste Inserate</h2>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Neueste Inserate
+            </h2>
             <Link href="/fahrzeuge">
-              <Button variant="ghost" className="text-primary gap-1 hidden sm:flex">
+              <Button
+                variant="ghost"
+                className="text-primary gap-1 hidden sm:flex"
+              >
                 Alle anzeigen <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
           {isLoadingRecent ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-80 w-full rounded-xl" />)}
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-80 w-full rounded-xl" />
+              ))}
             </div>
           ) : recent && recent.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {recent.map(vehicle => (
+                {recent.map((vehicle) => (
                   <VehicleCard key={vehicle.id} vehicle={vehicle} />
                 ))}
               </div>
               <div className="mt-8 text-center sm:hidden">
                 <Link href="/fahrzeuge">
-                  <Button variant="outline" className="gap-2">Alle anzeigen <ArrowRight className="h-4 w-4" /></Button>
+                  <Button variant="outline" className="gap-2">
+                    Alle anzeigen <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </Link>
               </div>
             </>
           ) : (
-            <div className="text-center text-muted-foreground py-12">Keine neuesten Inserate gefunden.</div>
+            <div className="text-center text-muted-foreground py-12">
+              Keine neuesten Inserate gefunden.
+            </div>
           )}
         </div>
       </section>
