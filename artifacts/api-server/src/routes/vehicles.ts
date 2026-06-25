@@ -8,6 +8,7 @@ import {
   DeleteVehicleParams,
   GetSimilarVehiclesParams,
 } from "@workspace/api-zod";
+import { requireAdminAuth } from "../middlewares/auth";
 
 const router = Router();
 
@@ -22,12 +23,16 @@ function toVehicleDTO(v: any, dealer?: any) {
     km: v.km,
     fuelType: v.fuelType,
     transmission: v.transmission ?? null,
+    vehicleType: v.vehicleType ?? null,
     power: v.power ?? null,
     color: v.color ?? null,
+    condition: v.condition ?? null,
+    doors: v.doors ?? null,
+    seats: v.seats ?? null,
     description: v.description ?? null,
-    images: v.images ?? [],
+    images: Array.isArray(v.images) ? v.images : [],
     featured: v.featured,
-    dealerId: v.dealerId,
+    dealerId: v.dealerId ?? null,
     dealerName: dealer?.name ?? null,
     location: v.location ?? null,
     createdAt: v.createdAt ? v.createdAt.toISOString() : null,
@@ -35,10 +40,10 @@ function toVehicleDTO(v: any, dealer?: any) {
 }
 
 async function fetchDealersForVehicles(vehicles: any[]) {
-  const dealerIds = [...new Set(vehicles.map(v => v.dealerId))];
-  if (dealerIds.length === 0) return {};
+  const dealerIds = [...new Set(vehicles.map(v => v.dealerId).filter((id): id is number => id != null))];
+  if (dealerIds.length === 0) return {} as Record<number, any>;
   const dealers = await db.select().from(dealersTable).where(inArray(dealersTable.id, dealerIds));
-  return Object.fromEntries(dealers.map(d => [d.id, d]));
+  return Object.fromEntries(dealers.map(d => [d.id, d])) as Record<number, any>;
 }
 
 router.get("/vehicles", async (req, res) => {
@@ -51,13 +56,13 @@ router.get("/vehicles", async (req, res) => {
 
     const conditions = [];
     if (brand) conditions.push(ilike(vehiclesTable.brand, `%${brand}%`));
-    if (minPrice) conditions.push(gte(vehiclesTable.price, String(minPrice)));
-    if (maxPrice) conditions.push(lte(vehiclesTable.price, String(maxPrice)));
-    if (minYear) conditions.push(gte(vehiclesTable.year, minYear));
-    if (maxYear) conditions.push(lte(vehiclesTable.year, maxYear));
-    if (maxKm) conditions.push(lte(vehiclesTable.km, maxKm));
+    if (minPrice != null) conditions.push(gte(vehiclesTable.price, minPrice));
+    if (maxPrice != null) conditions.push(lte(vehiclesTable.price, maxPrice));
+    if (minYear != null) conditions.push(gte(vehiclesTable.year, minYear));
+    if (maxYear != null) conditions.push(lte(vehiclesTable.year, maxYear));
+    if (maxKm != null) conditions.push(lte(vehiclesTable.km, maxKm));
     if (fuelType) conditions.push(eq(vehiclesTable.fuelType, fuelType));
-    if (dealerId) conditions.push(eq(vehiclesTable.dealerId, dealerId));
+    if (dealerId != null) conditions.push(eq(vehiclesTable.dealerId, dealerId));
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -69,7 +74,7 @@ router.get("/vehicles", async (req, res) => {
     const dealerMap = await fetchDealersForVehicles(vehicles);
 
     return res.json({
-      vehicles: vehicles.map(v => toVehicleDTO(v, dealerMap[v.dealerId])),
+      vehicles: vehicles.map(v => toVehicleDTO(v, v.dealerId != null ? dealerMap[v.dealerId] : undefined)),
       total: Number(countResult[0]?.count ?? 0),
     });
   } catch (err) {
@@ -78,7 +83,7 @@ router.get("/vehicles", async (req, res) => {
   }
 });
 
-router.post("/vehicles", async (req, res) => {
+router.post("/vehicles", requireAdminAuth, async (req, res) => {
   try {
     const parsed = CreateVehicleBody.safeParse(req.body);
     if (!parsed.success) {
@@ -90,17 +95,18 @@ router.post("/vehicles", async (req, res) => {
       brand: data.brand,
       model: data.model,
       year: data.year,
-      price: String(data.price),
+      price: Math.round(data.price),
       km: data.km,
       fuelType: data.fuelType,
-      transmission: data.transmission,
-      power: data.power,
-      color: data.color,
-      description: data.description,
-      images: data.images,
+      transmission: data.transmission ?? "Automatik",
+      vehicleType: "Sonstige",
+      location: data.location ?? "Schweiz",
+      power: data.power ?? undefined,
+      color: data.color ?? undefined,
+      description: data.description ?? undefined,
+      images: (data.images ?? []) as string[],
       featured: data.featured ?? false,
-      dealerId: data.dealerId,
-      location: data.location,
+      dealerId: data.dealerId ?? undefined,
     }).returning();
     return res.status(201).json(toVehicleDTO(vehicle));
   } catch (err) {
@@ -117,7 +123,7 @@ router.get("/vehicles/featured", async (req, res) => {
       .orderBy(desc(vehiclesTable.createdAt))
       .limit(limit);
     const dealerMap = await fetchDealersForVehicles(vehicles);
-    return res.json(vehicles.map(v => toVehicleDTO(v, dealerMap[v.dealerId])));
+    return res.json(vehicles.map(v => toVehicleDTO(v, v.dealerId != null ? dealerMap[v.dealerId] : undefined)));
   } catch (err) {
     req.log.error({ err }, "getFeaturedVehicles error");
     return res.status(500).json({ error: "Internal server error" });
@@ -131,7 +137,7 @@ router.get("/vehicles/recent", async (req, res) => {
       .orderBy(desc(vehiclesTable.createdAt))
       .limit(limit);
     const dealerMap = await fetchDealersForVehicles(vehicles);
-    return res.json(vehicles.map(v => toVehicleDTO(v, dealerMap[v.dealerId])));
+    return res.json(vehicles.map(v => toVehicleDTO(v, v.dealerId != null ? dealerMap[v.dealerId] : undefined)));
   } catch (err) {
     req.log.error({ err }, "getRecentVehicles error");
     return res.status(500).json({ error: "Internal server error" });
@@ -140,11 +146,13 @@ router.get("/vehicles/recent", async (req, res) => {
 
 router.get("/vehicles/:id", async (req, res) => {
   try {
-    const parsed = GetVehicleParams.safeParse({ id: parseInt(req.params.id, 10) });
+    const parsed = GetVehicleParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
     const [vehicle] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, parsed.data.id));
     if (!vehicle) return res.status(404).json({ error: "Not found" });
-    const [dealer] = await db.select().from(dealersTable).where(eq(dealersTable.id, vehicle.dealerId));
+    const dealer = vehicle.dealerId
+      ? (await db.select().from(dealersTable).where(eq(dealersTable.id, vehicle.dealerId)))[0]
+      : undefined;
     return res.json(toVehicleDTO(vehicle, dealer));
   } catch (err) {
     req.log.error({ err }, "getVehicle error");
@@ -152,9 +160,9 @@ router.get("/vehicles/:id", async (req, res) => {
   }
 });
 
-router.delete("/vehicles/:id", async (req, res) => {
+router.delete("/vehicles/:id", requireAdminAuth, async (req, res) => {
   try {
-    const parsed = DeleteVehicleParams.safeParse({ id: parseInt(req.params.id, 10) });
+    const parsed = DeleteVehicleParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
     await db.delete(vehiclesTable).where(eq(vehiclesTable.id, parsed.data.id));
     return res.status(204).send();
@@ -166,7 +174,7 @@ router.delete("/vehicles/:id", async (req, res) => {
 
 router.get("/vehicles/:id/similar", async (req, res) => {
   try {
-    const parsed = GetSimilarVehiclesParams.safeParse({ id: parseInt(req.params.id, 10) });
+    const parsed = GetSimilarVehiclesParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
     const [source] = await db.select().from(vehiclesTable).where(eq(vehiclesTable.id, parsed.data.id));
     if (!source) return res.status(404).json({ error: "Not found" });
@@ -175,7 +183,7 @@ router.get("/vehicles/:id/similar", async (req, res) => {
       .orderBy(desc(vehiclesTable.createdAt))
       .limit(4);
     const dealerMap = await fetchDealersForVehicles(similar);
-    return res.json(similar.map(v => toVehicleDTO(v, dealerMap[v.dealerId])));
+    return res.json(similar.map(v => toVehicleDTO(v, v.dealerId != null ? dealerMap[v.dealerId] : undefined)));
   } catch (err) {
     req.log.error({ err }, "getSimilarVehicles error");
     return res.status(500).json({ error: "Internal server error" });

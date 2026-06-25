@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db, inquiriesTable, vehiclesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { ListInquiriesQueryParams, CreateInquiryBody, UpdateInquiryParams, UpdateInquiryBody } from "@workspace/api-zod";
+import { requireAdminAuth } from "../middlewares/auth";
 
 const router = Router();
 
@@ -10,9 +11,9 @@ function toInquiryDTO(i: any, vehicle?: any) {
     id: i.id,
     vehicleId: i.vehicleId,
     vehicleTitle: vehicle?.title ?? null,
-    name: i.name,
-    email: i.email,
-    phone: i.phone ?? null,
+    name: i.senderName,
+    email: i.senderEmail,
+    phone: i.senderPhone ?? null,
     message: i.message,
     status: i.status,
     dealerId: i.dealerId ?? null,
@@ -20,7 +21,7 @@ function toInquiryDTO(i: any, vehicle?: any) {
   };
 }
 
-router.get("/inquiries", async (req, res) => {
+router.get("/inquiries", requireAdminAuth, async (req, res) => {
   try {
     const parsed = ListInquiriesQueryParams.safeParse(req.query);
     if (!parsed.success) return res.status(400).json({ error: "Invalid query" });
@@ -33,7 +34,7 @@ router.get("/inquiries", async (req, res) => {
 
     const vehicleIds = [...new Set(inquiries.map(i => i.vehicleId))];
     const vehicles = vehicleIds.length > 0
-      ? await db.select({ id: vehiclesTable.id, title: vehiclesTable.title }).from(vehiclesTable).where(eq(vehiclesTable.id, vehicleIds[0]))
+      ? await db.select({ id: vehiclesTable.id, title: vehiclesTable.title }).from(vehiclesTable).where(inArray(vehiclesTable.id, vehicleIds))
       : [];
     const vehicleMap = Object.fromEntries(vehicles.map(v => [v.id, v]));
 
@@ -55,11 +56,11 @@ router.post("/inquiries", async (req, res) => {
 
     const [inquiry] = await db.insert(inquiriesTable).values({
       vehicleId,
-      name: senderName,
-      email: senderEmail,
-      phone: senderPhone,
+      senderName,
+      senderEmail,
+      senderPhone,
       message,
-      dealerId: vehicle.dealerId,
+      dealerId: vehicle.dealerId ?? undefined,
       status: "pending",
     }).returning();
 
@@ -70,9 +71,9 @@ router.post("/inquiries", async (req, res) => {
   }
 });
 
-router.patch("/inquiries/:id", async (req, res) => {
+router.patch("/inquiries/:id", requireAdminAuth, async (req, res) => {
   try {
-    const paramsParsed = UpdateInquiryParams.safeParse({ id: parseInt(req.params.id, 10) });
+    const paramsParsed = UpdateInquiryParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!paramsParsed.success) return res.status(400).json({ error: "Invalid id" });
 
     const bodyParsed = UpdateInquiryBody.safeParse(req.body);

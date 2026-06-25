@@ -2,28 +2,47 @@ import { Router } from "express";
 import { db, vehiclesTable, dealersTable, inquiriesTable } from "@workspace/db";
 import { eq, sql, gte } from "drizzle-orm";
 import { AdminLoginBody, GetDashboardStatsQueryParams } from "@workspace/api-zod";
+import { requireAdminAuth } from "../middlewares/auth";
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "horizone2025";
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "admin-token-horizone";
+function getAdminPassword(): string {
+  const pw = process.env.ADMIN_PASSWORD;
+  if (!pw) throw new Error("ADMIN_PASSWORD environment variable must be set");
+  return pw;
+}
+
+function getAdminToken(): string {
+  const token = process.env.ADMIN_TOKEN;
+  if (token) return token;
+  const password = process.env.ADMIN_PASSWORD;
+  if (password) return `horizone-${Buffer.from(password).toString("base64url")}`;
+  throw new Error("ADMIN_PASSWORD or ADMIN_TOKEN environment variable must be set");
+}
+
 const DEALER_ID = 1;
 
 router.post("/admin/login", async (req, res) => {
   try {
     const parsed = AdminLoginBody.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Invalid body" });
-    if (parsed.data.password !== ADMIN_PASSWORD) {
+    let expectedPw: string;
+    try {
+      expectedPw = getAdminPassword();
+    } catch {
+      return res.status(500).json({ error: "Server misconfiguration: ADMIN_PASSWORD not set" });
+    }
+    if (parsed.data.password !== expectedPw) {
       return res.status(401).json({ error: "Ungültiges Passwort" });
     }
-    return res.json({ token: ADMIN_TOKEN });
+    return res.json({ token: getAdminToken() });
   } catch (err) {
     req.log.error({ err }, "adminLogin error");
     return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.get("/admin/stats", async (req, res) => {
+router.get("/admin/stats", requireAdminAuth, async (req, res) => {
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -47,7 +66,7 @@ router.get("/admin/stats", async (req, res) => {
   }
 });
 
-router.get("/admin/platform-stats", async (req, res) => {
+router.get("/admin/platform-stats", requireAdminAuth, async (req, res) => {
   try {
     const [vehiclesResult, dealersResult, inquiriesResult] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(vehiclesTable),
@@ -67,7 +86,7 @@ router.get("/admin/platform-stats", async (req, res) => {
   }
 });
 
-router.get("/admin/dashboard-stats", async (req, res) => {
+router.get("/admin/dashboard-stats", requireAdminAuth, async (req, res) => {
   try {
     const parsed = GetDashboardStatsQueryParams.safeParse(req.query);
     const dealerId = parsed.success ? parsed.data.dealerId : DEALER_ID;

@@ -9,12 +9,15 @@ function toDealerDTO(d: any) {
   return {
     id: d.id,
     name: d.name,
-    location: d.location ?? null,
+    location: d.city ?? null,
+    city: d.city ?? null,
+    address: d.address ?? null,
     phone: d.phone ?? null,
     email: d.email ?? null,
     description: d.description ?? null,
     rating: d.rating ? Number(d.rating) : null,
     verified: d.verified,
+    reviewCount: d.reviewCount ?? 0,
   };
 }
 
@@ -34,7 +37,7 @@ function toVehicleDTO(v: any, dealer?: any) {
     description: v.description ?? null,
     images: v.images ?? [],
     featured: v.featured,
-    dealerId: v.dealerId,
+    dealerId: v.dealerId ?? null,
     dealerName: dealer?.name ?? null,
     location: v.location ?? null,
     createdAt: v.createdAt ? v.createdAt.toISOString() : null,
@@ -43,7 +46,7 @@ function toVehicleDTO(v: any, dealer?: any) {
 
 router.get("/dealers/:id", async (req, res) => {
   try {
-    const parsed = GetDealerParams.safeParse({ id: parseInt(req.params.id, 10) });
+    const parsed = GetDealerParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
     const [dealer] = await db.select().from(dealersTable).where(eq(dealersTable.id, parsed.data.id));
     if (!dealer) return res.status(404).json({ error: "Not found" });
@@ -56,7 +59,7 @@ router.get("/dealers/:id", async (req, res) => {
 
 router.get("/dealers/:id/vehicles", async (req, res) => {
   try {
-    const parsed = GetDealerVehiclesParams.safeParse({ id: parseInt(req.params.id, 10) });
+    const parsed = GetDealerVehiclesParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
     const vehicles = await db.select().from(vehiclesTable)
       .where(eq(vehiclesTable.dealerId, parsed.data.id))

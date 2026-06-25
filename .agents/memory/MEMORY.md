@@ -1,0 +1,2 @@
+- [Real DB schema vs Drizzle schema](real-db-schema.md) — the real DB has different column names/types from what was designed; lib/db must match exactly
+- [lib/db rebuild required](lib-db-rebuild.md) — when changing lib/db schema, must run `pnpm --filter @workspace/db exec tsc -p tsconfig.json` before typechecking dependents

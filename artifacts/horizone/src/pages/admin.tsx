@@ -129,7 +129,7 @@ export default function Admin() {
   async function handleDeleteVehicle(id: number, title: string) {
     if (!confirm(`„${title}" wirklich löschen?`)) return;
     try {
-      await fetch(`/api/vehicles/${id}/admin`, {
+      await fetch(`/api/vehicles/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
