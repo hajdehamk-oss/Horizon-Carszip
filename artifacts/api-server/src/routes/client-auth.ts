@@ -9,8 +9,8 @@ const router = Router();
 
 router.post("/auth/register", async (req, res) => {
   const { name, email, password, phone, city } = req.body;
-  if (!name || !email || !password) {
-    res.status(400).json({ error: "Name, E-Mail und Passwort sind erforderlich" });
+  if (!name || !email || !password || !phone) {
+    res.status(400).json({ error: "Name, E-Mail, Passwort und Telefonnummer sind erforderlich" });
     return;
   }
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);

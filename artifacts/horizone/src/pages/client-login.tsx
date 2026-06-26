@@ -133,15 +133,13 @@ export default function ClientLogin() {
                     <Label htmlFor="reg-password">Passwort</Label>
                     <Input id="reg-password" type="password" placeholder="Mindestens 6 Zeichen" minLength={6} value={regPassword} onChange={e => setRegPassword(e.target.value)} required />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-phone">Telefon (optional)</Label>
-                      <Input id="reg-phone" placeholder="+41 79 000 00 00" value={regPhone} onChange={e => setRegPhone(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-city">Stadt (optional)</Label>
-                      <Input id="reg-city" placeholder="Zürich" value={regCity} onChange={e => setRegCity(e.target.value)} />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-phone">Telefonnummer</Label>
+                    <Input id="reg-phone" placeholder="+41 79 000 00 00" value={regPhone} onChange={e => setRegPhone(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-city">Stadt <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input id="reg-city" placeholder="Zürich" value={regCity} onChange={e => setRegCity(e.target.value)} />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
