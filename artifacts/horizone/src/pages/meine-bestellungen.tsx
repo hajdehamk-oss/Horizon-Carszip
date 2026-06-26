@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useClientAuth, getClientToken } from "@/hooks/use-client-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, LogOut, CheckCircle2, Clock, Hourglass, XCircle } from "lucide-react";
+import { Car, LogOut, CheckCircle2, Clock, Hourglass, XCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const ORDER_STEPS = [
@@ -64,21 +64,57 @@ interface Order {
   vehiclePrice: number;
 }
 
+const POLL_INTERVAL = 4000;
+
 export default function MeineBestellungen() {
   const [, navigate] = useLocation();
   const { user, isLoggedIn, logout } = useClientAuth();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const prevOrdersRef = useRef<Order[]>([]);
+
+  async function fetchOrders(silent = false) {
+    if (!silent) setSyncing(true);
+    const token = getClientToken();
+    try {
+      const res = await fetch("/api/orders/mine", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      const fresh: Order[] = Array.isArray(data) ? data : [];
+
+      // Detect changes and notify
+      const prev = prevOrdersRef.current;
+      fresh.forEach(order => {
+        const old = prev.find(o => o.id === order.id);
+        if (!old) return;
+        if (old.status === "pending" && order.status === "active") {
+          toast({ title: "✅ Bestellung bestätigt!", description: `Ihre Anfrage für ${order.vehicleTitle} wurde angenommen.` });
+        } else if (old.status === "pending" && order.status === "rejected") {
+          toast({ title: "❌ Anfrage abgelehnt", description: `Ihre Anfrage für ${order.vehicleTitle} wurde leider abgelehnt.`, variant: "destructive" });
+        } else if (old.currentStep !== order.currentStep && order.status === "active") {
+          const stepLabel = ORDER_STEPS[order.currentStep]?.label.replace("\n", " ") ?? "";
+          toast({ title: "🚗 Status aktualisiert", description: `${order.vehicleTitle}: ${stepLabel}` });
+        }
+      });
+
+      prevOrdersRef.current = fresh;
+      setOrders(fresh);
+      setLastUpdate(new Date());
+    } catch {
+      if (!silent) toast({ title: "Fehler", description: "Bestellungen konnten nicht geladen werden", variant: "destructive" });
+    } finally {
+      setLoading(false);
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     if (!isLoggedIn) { navigate("/login"); return; }
-    const token = getClientToken();
-    fetch("/api/orders/mine", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(data => { setOrders(Array.isArray(data) ? data : []); })
-      .catch(() => toast({ title: "Fehler", description: "Bestellungen konnten nicht geladen werden", variant: "destructive" }))
-      .finally(() => setLoading(false));
+    fetchOrders();
+    const interval = setInterval(() => fetchOrders(true), POLL_INTERVAL);
+    return () => clearInterval(interval);
   }, [isLoggedIn]);
 
   function handleLogout() {
@@ -97,8 +133,25 @@ export default function MeineBestellungen() {
     <div className="container py-8 max-w-3xl space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Meine Bestellungen</h1>
-          <p className="text-muted-foreground text-sm">Willkommen, {user?.name}</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Meine Bestellungen</h1>
+            <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Live
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-muted-foreground text-sm">Willkommen, {user?.name}</p>
+            {lastUpdate && (
+              <span className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
+                {lastUpdate.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+            )}
+          </div>
         </div>
         <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
           <LogOut className="w-4 h-4" />

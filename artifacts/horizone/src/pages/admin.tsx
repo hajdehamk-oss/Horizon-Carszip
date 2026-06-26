@@ -78,7 +78,11 @@ function OrdersPanel({ token }: { token: string }) {
     } finally { setLoading(false); }
   }
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    loadAll();
+    const interval = setInterval(() => loadAll(), 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSave(id: number) {
     setSaving(id);
