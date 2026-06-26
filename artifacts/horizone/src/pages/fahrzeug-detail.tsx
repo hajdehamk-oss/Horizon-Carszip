@@ -36,8 +36,9 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { useCompare } from "@/hooks/use-compare";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useClientAuth, getClientToken } from "@/hooks/use-client-auth";
+import { useClientAuth } from "@/hooks/use-client-auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AuthDialog } from "@/components/auth-dialog";
 import { ShoppingCart, Loader2 } from "lucide-react";
 
 export default function FahrzeugDetail() {
@@ -57,7 +58,7 @@ export default function FahrzeugDetail() {
 
   const { isFavorited, toggleFavorite } = useFavorites();
   const { isInCompare, toggleCompare, isFull } = useCompare();
-  const { isLoggedIn } = useClientAuth();
+  const { isLoggedIn, token } = useClientAuth();
   const [anzahlung, setAnzahlung] = useState(5000);
   const [laufzeit, setLaufzeit] = useState(48);
   const [copied, setCopied] = useState(false);
@@ -68,6 +69,8 @@ export default function FahrzeugDetail() {
   const [preorderMessage, setPreorderMessage] = useState("");
   const [preorderLoading, setPreorderLoading] = useState(false);
   const [preorderDone, setPreorderDone] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"contact" | "preorder" | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -94,16 +97,45 @@ export default function FahrzeugDetail() {
     startSlideshow();
   }
 
+  function openContact() {
+    if (!isLoggedIn) {
+      setPendingAction("contact");
+      setAuthDialogOpen(true);
+    } else {
+      setContactOpen(true);
+    }
+  }
+
+  function openPreorder() {
+    if (!isLoggedIn) {
+      setPendingAction("preorder");
+      setAuthDialogOpen(true);
+    } else {
+      setPreorderOpen(true);
+    }
+  }
+
+  function handleAuthSuccess() {
+    if (pendingAction === "contact") setContactOpen(true);
+    if (pendingAction === "preorder") setPreorderOpen(true);
+    setPendingAction(null);
+  }
+
   async function handlePreorder() {
     setPreorderLoading(true);
     try {
-      const token = getClientToken();
       const res = await fetch("/api/orders/request", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ vehicleId: vehicle!.id, message: preorderMessage || undefined }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        setPreorderOpen(false);
+        setPendingAction("preorder");
+        setAuthDialogOpen(true);
+        return;
+      }
       if (!res.ok) {
         toast({ title: "Fehler", description: data.error, variant: "destructive" });
         return;
@@ -177,6 +209,19 @@ export default function FahrzeugDetail() {
         vehicleLocation={vehicle.location ?? ""}
         vehicleId={vehicle.id}
         dealerId={vehicle.dealerId}
+      />
+
+      {/* Auth dialog — shown before protected actions for unauthenticated users */}
+      <AuthDialog
+        open={authDialogOpen}
+        onClose={() => { setAuthDialogOpen(false); setPendingAction(null); }}
+        onSuccess={handleAuthSuccess}
+        title={pendingAction === "preorder" ? "Vorbestellen — Anmelden" : "Nachricht senden — Anmelden"}
+        description={
+          pendingAction === "preorder"
+            ? "Melden Sie sich an oder erstellen Sie ein kostenloses Konto, um dieses Fahrzeug vorzubestellen."
+            : "Melden Sie sich an oder erstellen Sie ein kostenloses Konto, um eine Nachricht zu senden."
+        }
       />
 
       {/* Pre-order dialog */}
@@ -641,24 +686,16 @@ export default function FahrzeugDetail() {
                   </Link>
                 )}
                 {/* Pre-order CTA */}
-                {isLoggedIn ? (
-                  <Button
-                    className="w-full font-bold h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
-                    onClick={() => setPreorderOpen(true)}
-                  >
-                    <ShoppingCart className="w-4 h-4" /> Jetzt vorbestellen
-                  </Button>
-                ) : (
-                  <Link href="/login">
-                    <Button className="w-full font-bold h-12 gap-2 bg-primary hover:bg-primary/90 text-white">
-                      <ShoppingCart className="w-4 h-4" /> Vorbestellen (Login erforderlich)
-                    </Button>
-                  </Link>
-                )}
+                <Button
+                  className="w-full font-bold h-12 gap-2 bg-primary hover:bg-primary/90 text-white"
+                  onClick={openPreorder}
+                >
+                  <ShoppingCart className="w-4 h-4" /> Jetzt vorbestellen
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full h-10"
-                  onClick={() => setContactOpen(true)}
+                  onClick={openContact}
                 >
                   Nachricht senden
                 </Button>
