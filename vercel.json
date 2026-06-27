@@ -1,9 +1,7 @@
 {
-  "buildCommand": "pnpm install && pnpm --filter @workspace/db exec tsc -p tsconfig.json && pnpm --filter @workspace/api-client-react exec tsc -p tsconfig.json && pnpm --filter @workspace/horizone run build",
+  "buildCommand": "pnpm install && pnpm --filter @workspace/db exec tsc -p tsconfig.json && pnpm --filter @workspace/api-zod exec tsc -p tsconfig.json && pnpm --filter @workspace/api-client-react exec tsc -p tsconfig.json && pnpm --filter @workspace/horizone run build",
   "outputDirectory": "artifacts/horizone/dist/public",
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index" }
-  ],
+  "rewrites": [{ "source": "/api/:path*", "destination": "/api/index" }],
   "env": {
     "BASE_PATH": "/",
     "PORT": "3000",
