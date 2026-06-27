@@ -4,7 +4,7 @@ import { eq, sql, gte } from "drizzle-orm";
 import { AdminLoginBody, GetDashboardStatsQueryParams } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middlewares/auth.js";
 
-const router: import("express").Router = Router();
+const router: any = Router();
 
 function getAdminPassword(): string {
   const pw = process.env.ADMIN_PASSWORD;
@@ -22,7 +22,7 @@ function getAdminToken(): string {
 
 const DEALER_ID = 1;
 
-router.post("/admin/login", async (req, res) => {
+router.post("/admin/login", async (req: any, res: any) => {
   try {
     const parsed = AdminLoginBody.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Invalid body" });
@@ -42,7 +42,7 @@ router.post("/admin/login", async (req, res) => {
   }
 });
 
-router.get("/admin/stats", requireAdminAuth, async (req, res) => {
+router.get("/admin/stats", requireAdminAuth, async (req: any, res: any) => {
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -66,7 +66,7 @@ router.get("/admin/stats", requireAdminAuth, async (req, res) => {
   }
 });
 
-router.get("/admin/platform-stats", requireAdminAuth, async (req, res) => {
+router.get("/admin/platform-stats", requireAdminAuth, async (req: any, res: any) => {
   try {
     const [vehiclesResult, dealersResult, inquiriesResult] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(vehiclesTable),
@@ -86,7 +86,7 @@ router.get("/admin/platform-stats", requireAdminAuth, async (req, res) => {
   }
 });
 
-router.get("/admin/dashboard-stats", requireAdminAuth, async (req, res) => {
+router.get("/admin/dashboard-stats", requireAdminAuth, async (req: any, res: any) => {
   try {
     const parsed = GetDashboardStatsQueryParams.safeParse(req.query);
     const dealerId = parsed.success ? parsed.data.dealerId : DEALER_ID;

@@ -3,7 +3,7 @@ import { db, dealersTable, vehiclesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { GetDealerParams, GetDealerVehiclesParams } from "@workspace/api-zod";
 
-const router: import("express").Router = Router();
+const router: any = Router();
 
 function toDealerDTO(d: any) {
   return {
@@ -44,7 +44,7 @@ function toVehicleDTO(v: any, dealer?: any) {
   };
 }
 
-router.get("/dealers", async (req, res) => {
+router.get("/dealers", async (req: any, res: any) => {
   try {
     const dealers = await db.select().from(dealersTable).orderBy(dealersTable.name);
     return res.json(dealers.map(toDealerDTO));
@@ -54,7 +54,7 @@ router.get("/dealers", async (req, res) => {
   }
 });
 
-router.get("/dealers/:id", async (req, res) => {
+router.get("/dealers/:id", async (req: any, res: any) => {
   try {
     const parsed = GetDealerParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
@@ -67,7 +67,7 @@ router.get("/dealers/:id", async (req, res) => {
   }
 });
 
-router.get("/dealers/:id/vehicles", async (req, res) => {
+router.get("/dealers/:id/vehicles", async (req: any, res: any) => {
   try {
     const parsed = GetDealerVehiclesParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });

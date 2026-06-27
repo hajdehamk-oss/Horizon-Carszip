@@ -10,7 +10,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middlewares/auth.js";
 
-const router: import("express").Router = Router();
+const router: any = Router();
 
 function toVehicleDTO(v: any, dealer?: any) {
   return {
@@ -46,7 +46,7 @@ async function fetchDealersForVehicles(vehicles: any[]) {
   return Object.fromEntries(dealers.map(d => [d.id, d])) as Record<number, any>;
 }
 
-router.get("/vehicles", async (req, res) => {
+router.get("/vehicles", async (req: any, res: any) => {
   try {
     const parsed = ListVehiclesQueryParams.safeParse(req.query);
     if (!parsed.success) {
@@ -90,7 +90,7 @@ router.get("/vehicles", async (req, res) => {
   }
 });
 
-router.post("/vehicles", requireAdminAuth, async (req, res) => {
+router.post("/vehicles", requireAdminAuth, async (req: any, res: any) => {
   try {
     const parsed = CreateVehicleBody.safeParse(req.body);
     if (!parsed.success) {
@@ -122,7 +122,7 @@ router.post("/vehicles", requireAdminAuth, async (req, res) => {
   }
 });
 
-router.get("/vehicles/featured", async (req, res) => {
+router.get("/vehicles/featured", async (req: any, res: any) => {
   try {
     const limit = parseInt(String(req.query.limit ?? "6"), 10);
     const vehicles = await db.select().from(vehiclesTable)
@@ -137,7 +137,7 @@ router.get("/vehicles/featured", async (req, res) => {
   }
 });
 
-router.get("/vehicles/recent", async (req, res) => {
+router.get("/vehicles/recent", async (req: any, res: any) => {
   try {
     const limit = parseInt(String(req.query.limit ?? "6"), 10);
     const vehicles = await db.select().from(vehiclesTable)
@@ -151,7 +151,7 @@ router.get("/vehicles/recent", async (req, res) => {
   }
 });
 
-router.get("/vehicles/:id", async (req, res) => {
+router.get("/vehicles/:id", async (req: any, res: any) => {
   try {
     const parsed = GetVehicleParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
@@ -167,7 +167,7 @@ router.get("/vehicles/:id", async (req, res) => {
   }
 });
 
-router.delete("/vehicles/:id", requireAdminAuth, async (req, res) => {
+router.delete("/vehicles/:id", requireAdminAuth, async (req: any, res: any) => {
   try {
     const parsed = DeleteVehicleParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
@@ -179,7 +179,7 @@ router.delete("/vehicles/:id", requireAdminAuth, async (req, res) => {
   }
 });
 
-router.get("/vehicles/:id/similar", async (req, res) => {
+router.get("/vehicles/:id/similar", async (req: any, res: any) => {
   try {
     const parsed = GetSimilarVehiclesParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });

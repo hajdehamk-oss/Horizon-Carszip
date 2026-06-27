@@ -4,7 +4,7 @@ import { eq, desc, inArray } from "drizzle-orm";
 import { ListInquiriesQueryParams, CreateInquiryBody, UpdateInquiryParams, UpdateInquiryBody } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middlewares/auth.js";
 
-const router: import("express").Router = Router();
+const router: any = Router();
 
 function toInquiryDTO(i: any, vehicle?: any) {
   return {
@@ -24,7 +24,7 @@ function toInquiryDTO(i: any, vehicle?: any) {
   };
 }
 
-router.get("/inquiries", requireAdminAuth, async (req, res) => {
+router.get("/inquiries", requireAdminAuth, async (req: any, res: any) => {
   try {
     const parsed = ListInquiriesQueryParams.safeParse(req.query);
     if (!parsed.success) return res.status(400).json({ error: "Invalid query" });
@@ -48,7 +48,7 @@ router.get("/inquiries", requireAdminAuth, async (req, res) => {
   }
 });
 
-router.post("/inquiries", async (req, res) => {
+router.post("/inquiries", async (req: any, res: any) => {
   try {
     const parsed = CreateInquiryBody.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Invalid body" });
@@ -74,7 +74,7 @@ router.post("/inquiries", async (req, res) => {
   }
 });
 
-router.patch("/inquiries/:id", requireAdminAuth, async (req, res) => {
+router.patch("/inquiries/:id", requireAdminAuth, async (req: any, res: any) => {
   try {
     const paramsParsed = UpdateInquiryParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!paramsParsed.success) return res.status(400).json({ error: "Invalid id" });

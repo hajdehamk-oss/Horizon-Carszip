@@ -7,7 +7,7 @@ import adminRouter from "./admin.js";
 import clientAuthRouter from "./client-auth.js";
 import ordersRouter from "./orders.js";
 
-const router: import("express").Router = Router();
+const router: any = Router();
 
 router.use(healthRouter);
 router.use(vehiclesRouter);
