@@ -5,8 +5,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "workspace": "./src/index.ts",
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "default": "./src/index.ts"
     }
   },
