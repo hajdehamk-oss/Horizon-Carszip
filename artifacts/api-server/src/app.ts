@@ -2,14 +2,13 @@ import express from "express";
 import cors from "cors";
 import type { IncomingMessage, ServerResponse } from "http";
 import pinoHttp from "pino-http";
-import router from "./routes.js";
+import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const app = express() as any;
+const app = express();
 
 app.use(
-  (pinoHttp as any)({
+  pinoHttp({
     logger,
     serializers: {
       req(req: IncomingMessage & { id?: unknown }) {
