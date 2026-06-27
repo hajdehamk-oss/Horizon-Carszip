@@ -5,7 +5,7 @@ import { usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { signClientToken, requireClientAuth } from "../middlewares/client-auth.js";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 router.post("/auth/register", async (req, res) => {
   const { name, email, password, phone, city } = req.body;

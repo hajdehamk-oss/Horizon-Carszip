@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { requireAdminAuth } from "../middlewares/auth.js";
 import { requireClientAuth } from "../middlewares/client-auth.js";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 export const ORDER_STEPS = [
   "Bestellung eingegangen",

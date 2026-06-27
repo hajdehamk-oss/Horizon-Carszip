@@ -10,7 +10,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middlewares/auth.js";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 function toVehicleDTO(v: any, dealer?: any) {
   return {

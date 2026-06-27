@@ -3,7 +3,7 @@ import { db, dealersTable, vehiclesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { GetDealerParams, GetDealerVehiclesParams } from "@workspace/api-zod";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 function toDealerDTO(d: any) {
   return {

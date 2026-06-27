@@ -4,7 +4,7 @@ import { eq, sql, gte } from "drizzle-orm";
 import { AdminLoginBody, GetDashboardStatsQueryParams } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middlewares/auth.js";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 function getAdminPassword(): string {
   const pw = process.env.ADMIN_PASSWORD;

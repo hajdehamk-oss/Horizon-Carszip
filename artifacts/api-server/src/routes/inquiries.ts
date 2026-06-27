@@ -4,7 +4,7 @@ import { eq, desc, inArray } from "drizzle-orm";
 import { ListInquiriesQueryParams, CreateInquiryBody, UpdateInquiryParams, UpdateInquiryBody } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middlewares/auth.js";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 function toInquiryDTO(i: any, vehicle?: any) {
   return {
