@@ -2,10 +2,10 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, vehiclesTable, usersTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAdminAuth } from "../middlewares/auth.js";
-import { requireClientAuth } from "../middlewares/client-auth.js";
+import { requireAdminAuth } from "../middlewares/auth";
+import { requireClientAuth } from "../middlewares/client-auth";
 
-const router: any = Router();
+const router = Router();
 
 export const ORDER_STEPS = [
   "Bestellung eingegangen",
@@ -34,7 +34,7 @@ const orderSelect = {
 };
 
 // Admin: list all orders
-router.get("/orders", requireAdminAuth, async (_req: any, res: any) => {
+router.get("/orders", requireAdminAuth, async (_req, res) => {
   const rows = await db
     .select(orderSelect)
     .from(ordersTable)
@@ -45,7 +45,7 @@ router.get("/orders", requireAdminAuth, async (_req: any, res: any) => {
 });
 
 // Admin: create order for a client (starts as active, step 0)
-router.post("/orders", requireAdminAuth, async (req: any, res: any) => {
+router.post("/orders", requireAdminAuth, async (req, res) => {
   const { vehicleId, userId, notes } = req.body;
   if (!vehicleId || !userId) {
     res.status(400).json({ error: "vehicleId und userId sind erforderlich" });
@@ -59,7 +59,7 @@ router.post("/orders", requireAdminAuth, async (req: any, res: any) => {
 });
 
 // Admin: update order step and/or status
-router.patch("/orders/:id", requireAdminAuth, async (req: any, res: any) => {
+router.patch("/orders/:id", requireAdminAuth, async (req, res) => {
   const id = Number(req.params.id);
   const { currentStep, notes, status } = req.body;
 
@@ -84,14 +84,14 @@ router.patch("/orders/:id", requireAdminAuth, async (req: any, res: any) => {
 });
 
 // Admin: delete order
-router.delete("/orders/:id", requireAdminAuth, async (req: any, res: any) => {
+router.delete("/orders/:id", requireAdminAuth, async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(ordersTable).where(eq(ordersTable.id, id));
   res.status(204).send();
 });
 
 // Client: submit a pre-order request for a vehicle
-router.post("/orders/request", requireClientAuth, async (req: any, res: any) => {
+router.post("/orders/request", requireClientAuth, async (req, res) => {
   const { userId } = (req as any).clientUser;
   const { vehicleId, message } = req.body;
   if (!vehicleId) {
@@ -120,7 +120,7 @@ router.post("/orders/request", requireClientAuth, async (req: any, res: any) => 
 });
 
 // Client: get own orders (with status)
-router.get("/orders/mine", requireClientAuth, async (req: any, res: any) => {
+router.get("/orders/mine", requireClientAuth, async (req, res) => {
   const { userId } = (req as any).clientUser;
   const rows = await db
     .select({
@@ -146,7 +146,7 @@ router.get("/orders/mine", requireClientAuth, async (req: any, res: any) => {
 });
 
 // Admin: list all registered clients
-router.get("/clients", requireAdminAuth, async (_req: any, res: any) => {
+router.get("/clients", requireAdminAuth, async (_req, res) => {
   const users = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, phone: usersTable.phone, createdAt: usersTable.createdAt })
     .from(usersTable)

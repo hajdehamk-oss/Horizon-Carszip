@@ -3,13 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.d.ts",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.d.ts"
-    }
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "zod": "catalog:"

@@ -78,11 +78,7 @@ function OrdersPanel({ token }: { token: string }) {
     } finally { setLoading(false); }
   }
 
-  useEffect(() => {
-    loadAll();
-    const interval = setInterval(() => loadAll(), 6000);
-    return () => clearInterval(interval);
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   async function handleSave(id: number) {
     setSaving(id);
@@ -201,74 +197,47 @@ function OrdersPanel({ token }: { token: string }) {
           </div>
           {orders.filter(o => o.status === "pending").map(order => (
             <Card key={order.id} className="border-amber-300/50 bg-amber-500/5 overflow-hidden">
-              <div className="px-4 pt-3 pb-2 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                  <Car className="w-4 h-4 text-amber-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm">{order.vehicleTitle ?? `${order.vehicleBrand} ${order.vehicleModel}`}</p>
-                  <p className="text-xs text-muted-foreground">{order.vehicleBrand} {order.vehicleModel} · {order.vehicleYear}</p>
-                  {order.notes && (
-                    <p className="text-xs text-muted-foreground italic mt-1 px-2 py-1 rounded bg-amber-500/10 border border-amber-300/30 inline-block">
-                      „{order.notes}"
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Client contact details */}
-              <div className="mx-4 mb-3 px-3 py-2.5 rounded-lg bg-background/60 border border-border/60 space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Kundendetails</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-medium">{order.userName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <a href={`mailto:${order.userEmail}`} className="text-primary hover:underline truncate">{order.userEmail}</a>
-                </div>
-                {order.userPhone ? (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    <a href={`tel:${order.userPhone}`} className="text-primary hover:underline">{order.userPhone}</a>
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                    <Car className="w-4 h-4 text-amber-600" />
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
-                    <Phone className="w-3.5 h-3.5 shrink-0" />
-                    <span>Keine Telefonnummer angegeben</span>
+                  <div>
+                    <p className="font-medium text-sm">{order.vehicleTitle ?? `${order.vehicleBrand} ${order.vehicleModel}`}</p>
+                    <p className="text-xs text-muted-foreground">{order.userName} · {order.userEmail}</p>
+                    {order.notes && <p className="text-xs text-muted-foreground italic mt-0.5">„{order.notes}"</p>}
                   </div>
-                )}
-              </div>
-
-              <div className="px-4 pb-3 flex items-center justify-end gap-2">
-                <Button
-                  size="sm" variant="ghost"
-                  className="text-destructive gap-1.5 hover:bg-destructive/10"
-                  disabled={saving === order.id}
-                  onClick={async () => {
-                    setSaving(order.id);
-                    await fetch(`/api/orders/${order.id}`, { method: "PATCH", headers: authHeaders, body: JSON.stringify({ status: "rejected" }) });
-                    toast({ title: "Anfrage abgelehnt" });
-                    await loadAll();
-                    setSaving(null);
-                  }}
-                >
-                  <X className="w-3.5 h-3.5" /> Ablehnen
-                </Button>
-                <Button
-                  size="sm"
-                  className="gap-1.5 bg-primary"
-                  disabled={saving === order.id}
-                  onClick={async () => {
-                    setSaving(order.id);
-                    await fetch(`/api/orders/${order.id}`, { method: "PATCH", headers: authHeaders, body: JSON.stringify({ status: "active", currentStep: 0 }) });
-                    toast({ title: "Bestellung bestätigt!", description: "Fortschrittsanzeige gestartet." });
-                    await loadAll();
-                    setSaving(null);
-                  }}
-                >
-                  <CheckCheck className="w-3.5 h-3.5" /> Bestätigen
-                </Button>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm" variant="ghost"
+                    className="text-destructive gap-1.5 hover:bg-destructive/10"
+                    disabled={saving === order.id}
+                    onClick={async () => {
+                      setSaving(order.id);
+                      await fetch(`/api/orders/${order.id}`, { method: "PATCH", headers: authHeaders, body: JSON.stringify({ status: "rejected" }) });
+                      toast({ title: "Anfrage abgelehnt" });
+                      await loadAll();
+                      setSaving(null);
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" /> Ablehnen
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-primary"
+                    disabled={saving === order.id}
+                    onClick={async () => {
+                      setSaving(order.id);
+                      await fetch(`/api/orders/${order.id}`, { method: "PATCH", headers: authHeaders, body: JSON.stringify({ status: "active", currentStep: 0 }) });
+                      toast({ title: "Bestellung bestätigt!", description: "Fortschrittsanzeige gestartet." });
+                      await loadAll();
+                      setSaving(null);
+                    }}
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" /> Bestätigen
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}

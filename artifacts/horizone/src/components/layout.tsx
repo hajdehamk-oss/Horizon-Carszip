@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Car, Menu, X, PackageCheck, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { Moon, Sun, Car, Menu, X, PackageCheck, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useClientAuth } from "@/hooks/use-client-auth";
-import { useToast } from "@/hooks/use-toast";
 
 const baseNavLinks = [
   { href: "/", label: "Startseite" },
@@ -19,16 +17,8 @@ const baseNavLinks = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [, navigate] = useLocation();
   const [location] = useLocation();
-  const { isLoggedIn, user, logout } = useClientAuth();
-  const { toast } = useToast();
-
-  function handleLogout() {
-    logout();
-    navigate("/");
-    toast({ title: "Abgemeldet", description: "Sie wurden erfolgreich abgemeldet." });
-  }
+  const { isLoggedIn, user } = useClientAuth();
 
   const navLinks = isLoggedIn
     ? [...baseNavLinks, { href: "/meine-bestellungen", label: "Meine Bestellungen" }]
@@ -64,26 +54,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {/* Client login / account button */}
             {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="hidden md:flex gap-1.5 text-xs">
-                    <PackageCheck className="h-4 w-4" />
-                    {user?.name?.split(" ")[0]}
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem asChild>
-                    <Link href="/meine-bestellungen" className="flex items-center gap-2 w-full cursor-pointer">
-                      <PackageCheck className="h-4 w-4" /> Meine Bestellungen
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive gap-2 cursor-pointer">
-                    <LogOut className="h-4 w-4" /> Abmelden
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link href="/meine-bestellungen">
+                <Button variant="ghost" size="sm" className="hidden md:flex gap-1.5 text-xs">
+                  <PackageCheck className="h-4 w-4" />
+                  {user?.name?.split(" ")[0]}
+                </Button>
+              </Link>
             ) : (
               <Link href="/login">
                 <Button variant="ghost" size="sm" className="hidden md:flex gap-1.5 text-xs">
