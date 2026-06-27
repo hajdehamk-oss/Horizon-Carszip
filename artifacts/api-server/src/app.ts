@@ -5,7 +5,7 @@ import pinoHttp, { type Options } from "pino-http";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
-const app: import("express").Application = express();
+const app: any = express();
 
 const httpLogger = (pinoHttp as unknown as (opts: Options) => any)({
   logger,
