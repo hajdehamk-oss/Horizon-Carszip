@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { signClientToken, requireClientAuth } from "../middlewares/client-auth";
+import { signClientToken, requireClientAuth } from "../middlewares/client-auth.js";
 
 const router = Router();
 

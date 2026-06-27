@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, inquiriesTable, vehiclesTable } from "@workspace/db";
 import { eq, desc, inArray } from "drizzle-orm";
 import { ListInquiriesQueryParams, CreateInquiryBody, UpdateInquiryParams, UpdateInquiryBody } from "@workspace/api-zod";
-import { requireAdminAuth } from "../middlewares/auth";
+import { requireAdminAuth } from "../middlewares/auth.js";
 
 const router = Router();
 

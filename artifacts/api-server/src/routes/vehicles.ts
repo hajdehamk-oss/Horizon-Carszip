@@ -8,7 +8,7 @@ import {
   DeleteVehicleParams,
   GetSimilarVehiclesParams,
 } from "@workspace/api-zod";
-import { requireAdminAuth } from "../middlewares/auth";
+import { requireAdminAuth } from "../middlewares/auth.js";
 
 const router = Router();
 

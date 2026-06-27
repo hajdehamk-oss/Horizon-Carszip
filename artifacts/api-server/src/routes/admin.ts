@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, vehiclesTable, dealersTable, inquiriesTable } from "@workspace/db";
 import { eq, sql, gte } from "drizzle-orm";
 import { AdminLoginBody, GetDashboardStatsQueryParams } from "@workspace/api-zod";
-import { requireAdminAuth } from "../middlewares/auth";
+import { requireAdminAuth } from "../middlewares/auth.js";
 
 const router = Router();
 
