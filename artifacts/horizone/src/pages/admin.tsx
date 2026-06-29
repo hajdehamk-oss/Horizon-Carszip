@@ -427,14 +427,18 @@ export default function Admin() {
   async function handleDeleteVehicle(id: number, title: string) {
     if (!confirm(`„${title}" wirklich löschen?`)) return;
     try {
-      await fetch(`/api/vehicles/${id}`, {
+      const res = await fetch(`/api/vehicles/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || `Fehler ${res.status}`);
+      }
       await queryClient.invalidateQueries();
       toast({ title: "Fahrzeug gelöscht" });
-    } catch {
-      toast({ title: "Fehler beim Löschen", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Fehler beim Löschen", description: String(err), variant: "destructive" });
     }
   }
 
@@ -537,6 +541,7 @@ export default function Admin() {
               )}
             </TabsTrigger>
             <TabsTrigger value="bestellungen" className="whitespace-nowrap">Bestellungen</TabsTrigger>
+            <TabsTrigger value="gewinn" className="whitespace-nowrap">💰 Gewinn</TabsTrigger>
           </TabsList>
         </div>
 
@@ -1062,6 +1067,11 @@ export default function Admin() {
         {/* ── Bestellungen ── */}
         <TabsContent value="bestellungen">
           <OrdersPanel token={token ?? ""} />
+        </TabsContent>
+
+        {/* ── Gewinn ── */}
+        <TabsContent value="gewinn">
+          <GewinnPanel />
         </TabsContent>
 
         {/* ── Approvals ── */}
