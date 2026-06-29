@@ -370,6 +370,9 @@ export default function Admin() {
   const [, navigate] = useLocation();
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [profitTotal, setProfitTotal] = useState<number>(() => Number(localStorage.getItem("horizone_profit_total") ?? 0));
+  const [profitEditing, setProfitEditing] = useState(false);
+  const [profitInput, setProfitInput] = useState("");
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
   const [form, setForm] = useState<VehicleFormData>(emptyForm);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -481,14 +484,44 @@ export default function Admin() {
 
       {/* Platform stat cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="cursor-pointer" onClick={() => { if (!profitEditing) { setProfitInput(String(profitTotal)); setProfitEditing(true); } }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Umsatz Gesamt</CardTitle>
+            <CardTitle className="text-sm font-medium">Mein Gewinn</CardTitle>
             <Euro className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">CHF 0</div>
-            <p className="text-xs text-muted-foreground mt-1">0 aktive Abos à CHF 299</p>
+            {profitEditing ? (
+              <div className="flex gap-2 items-center" onClick={e => e.stopPropagation()}>
+                <span className="text-sm font-semibold text-muted-foreground">CHF</span>
+                <input
+                  autoFocus
+                  type="number"
+                  className="w-28 text-xl font-bold bg-transparent border-b border-primary outline-none"
+                  value={profitInput}
+                  onChange={e => setProfitInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      const val = Number(profitInput) || 0;
+                      setProfitTotal(val);
+                      localStorage.setItem("horizone_profit_total", String(val));
+                      setProfitEditing(false);
+                    }
+                    if (e.key === "Escape") setProfitEditing(false);
+                  }}
+                  onBlur={() => {
+                    const val = Number(profitInput) || 0;
+                    setProfitTotal(val);
+                    localStorage.setItem("horizone_profit_total", String(val));
+                    setProfitEditing(false);
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-primary">
+                CHF {new Intl.NumberFormat("de-CH").format(profitTotal)}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">Klicken um zu bearbeiten</p>
           </CardContent>
         </Card>
         <Card>
@@ -541,7 +574,6 @@ export default function Admin() {
               )}
             </TabsTrigger>
             <TabsTrigger value="bestellungen" className="whitespace-nowrap">Bestellungen</TabsTrigger>
-            <TabsTrigger value="gewinn" className="whitespace-nowrap">💰 Gewinn</TabsTrigger>
           </TabsList>
         </div>
 
@@ -1067,11 +1099,6 @@ export default function Admin() {
         {/* ── Bestellungen ── */}
         <TabsContent value="bestellungen">
           <OrdersPanel token={token ?? ""} />
-        </TabsContent>
-
-        {/* ── Gewinn ── */}
-        <TabsContent value="gewinn">
-          <GewinnPanel />
         </TabsContent>
 
         {/* ── Approvals ── */}
