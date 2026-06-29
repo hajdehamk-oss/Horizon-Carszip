@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db, vehiclesTable, dealersTable } from "@workspace/db";
+import { inquiriesTable, ordersTable } from "@workspace/db/schema";
 import { eq, desc, and, gte, lte, ilike, inArray, sql } from "drizzle-orm";
 import {
   ListVehiclesQueryParams,
@@ -171,7 +172,11 @@ router.delete("/vehicles/:id", requireAdminAuth, async (req, res) => {
   try {
     const parsed = DeleteVehicleParams.safeParse({ id: parseInt(String(req.params.id), 10) });
     if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
-    await db.delete(vehiclesTable).where(eq(vehiclesTable.id, parsed.data.id));
+    const id = parsed.data.id;
+    // Remove related records first to avoid FK constraint errors
+    await db.delete(inquiriesTable).where(eq(inquiriesTable.vehicleId, id));
+    await db.delete(ordersTable).where(eq(ordersTable.vehicleId, id));
+    await db.delete(vehiclesTable).where(eq(vehiclesTable.id, id));
     return res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "deleteVehicle error");
